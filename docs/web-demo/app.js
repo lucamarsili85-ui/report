@@ -25,13 +25,16 @@ class DraftDay {
     
     getTotalHours() {
         let total = 0;
-        this.clients.forEach(client => {
-            client.activities.forEach(activity => {
-                if (activity.type === 'mezzo' && activity.hours) {
-                    total += parseFloat(activity.hours);
-                }
+        if (this.clients && this.clients.length > 0) {
+            this.clients.forEach(client => {
+                const activities = client.activities || client.entries || [];
+                activities.forEach(activity => {
+                    if ((activity.type === 'mezzo' || activity.type === 'activity') && activity.data && activity.data.hours) {
+                        total += parseFloat(activity.data.hours);
+                    }
+                });
             });
-        });
+        }
         return total;
     }
 }
@@ -157,7 +160,7 @@ function loadOrCreateTodayDraft() {
     }
     
     currentDraftDay = draft;
-    renderDailyPreview();
+    renderClientSlides();
 }
 
 function getDraftDayByDate(date) {

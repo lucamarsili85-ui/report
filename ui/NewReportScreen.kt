@@ -5,13 +5,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.workreport.domain.Material
 import com.example.workreport.ui.viewmodel.WorkReportViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -19,8 +23,12 @@ import java.util.*
 /**
  * Screen for creating or editing a work report.
  * 
- * Provides a form with fields for date, job site, machine, hours worked, and notes.
+ * Provides a form with fields for date, job site, machine, hours worked, notes, and materials.
  * Validates input and saves the report to the database.
+ * 
+ * NOTE: This sample demonstrates materials tracking UI. The materials data is collected
+ * and managed in the UI state but not yet persisted. To complete the implementation,
+ * update the ViewModel, Repository, and Room entity to handle materials persistence.
  * 
  * @param viewModel The WorkReportViewModel for managing data
  * @param onNavigateBack Callback to navigate back to the previous screen
@@ -38,6 +46,13 @@ fun NewReportScreen(
     var machine by remember { mutableStateOf("") }
     var hoursWorked by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
+    
+    // Materials state
+    var materials by remember { mutableStateOf(listOf<Material>()) }
+    var materialName by remember { mutableStateOf("") }
+    var materialQuantity by remember { mutableStateOf("") }
+    var materialUnit by remember { mutableStateOf("") }
+    var materialNote by remember { mutableStateOf("") }
     
     var showDatePicker by remember { mutableStateOf(false) }
     var showError by remember { mutableStateOf(false) }
@@ -142,6 +157,166 @@ fun NewReportScreen(
                 supportingText = { Text("${notes.length}/500") }
             )
             
+            // Materials Section
+            Text(
+                text = "Materials",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            
+            // Add Material Form
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Add Material",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    
+                    OutlinedTextField(
+                        value = materialName,
+                        onValueChange = { materialName = it },
+                        label = { Text("Material Name") },
+                        placeholder = { Text("e.g., Concrete, Steel, Paint") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = materialQuantity,
+                            onValueChange = { materialQuantity = it },
+                            label = { Text("Quantity") },
+                            placeholder = { Text("e.g., 10.5") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        )
+                        
+                        OutlinedTextField(
+                            value = materialUnit,
+                            onValueChange = { materialUnit = it },
+                            label = { Text("Unit") },
+                            placeholder = { Text("e.g., kg, m³") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true
+                        )
+                    }
+                    
+                    OutlinedTextField(
+                        value = materialNote,
+                        onValueChange = { materialNote = it },
+                        label = { Text("Note (Optional)") },
+                        placeholder = { Text("Additional information") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    
+                    Button(
+                        onClick = {
+                            val trimmedName = materialName.trim()
+                            val trimmedQuantity = materialQuantity.trim()
+                            val trimmedUnit = materialUnit.trim()
+                            
+                            if (trimmedName.isNotEmpty() && trimmedQuantity.isNotEmpty() && trimmedUnit.isNotEmpty()) {
+                                val quantity = trimmedQuantity.toDoubleOrNull()
+                                if (quantity != null && quantity > 0) {
+                                    materials = materials + Material(
+                                        name = trimmedName,
+                                        quantity = quantity,
+                                        unit = trimmedUnit,
+                                        note = materialNote.trim()
+                                    )
+                                    // Clear form
+                                    materialName = ""
+                                    materialQuantity = ""
+                                    materialUnit = ""
+                                    materialNote = ""
+                                }
+                            }
+                        },
+                        modifier = Modifier.align(Alignment.End),
+                        enabled = materialName.trim().isNotEmpty() && 
+                                  materialQuantity.trim().isNotEmpty() && 
+                                  materialUnit.trim().isNotEmpty()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Add Material")
+                    }
+                }
+            }
+            
+            // Materials List
+            if (materials.isNotEmpty()) {
+                Text(
+                    text = "Materials List (${materials.size})",
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                
+                materials.forEachIndexed { index, material ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = material.name,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    text = "${material.quantity} ${material.unit}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                                )
+                                if (material.note.isNotBlank()) {
+                                    Text(
+                                        text = material.note,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f)
+                                    )
+                                }
+                            }
+                            IconButton(
+                                onClick = {
+                                    materials = materials.filterIndexed { i, _ -> i != index }
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete material",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            
             // Error message
             if (showError) {
                 Text(
@@ -178,6 +353,14 @@ fun NewReportScreen(
                         val validation = validateInput(trimmedJobSite, trimmedMachine, trimmedHours)
                         if (validation.isValid) {
                             // Safe to use toDouble() here as validation confirmed it's valid
+                            
+                            // TODO: This is a UI sample demonstrating materials management.
+                            // In a full implementation:
+                            // 1. Update WorkReportViewModel.insertReport signature to accept materials parameter
+                            // 2. Update WorkReportRepository to handle materials persistence
+                            // 3. Update Room entity to store materials (convert List<Material> to JSON or separate table)
+                            // Example call: viewModel.insertReport(date, jobSite, machine, hoursWorked, notes, materials)
+                            
                             viewModel.insertReport(
                                 date = date,
                                 jobSite = trimmedJobSite,

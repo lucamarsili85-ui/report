@@ -96,8 +96,34 @@
 
         <!-- Content Area -->
         <main class="content">
-            <!-- Dashboard Screen -->
-            <section id="dashboard-screen" class="screen active">
+            <!-- Home Screen -->
+            <section id="home-screen" class="screen active">
+                <div class="home-grid">
+                    <button class="home-card rapportino" data-navigate="rapportino">
+                        <span class="home-card-icon">📝</span>
+                        <span class="home-card-label">Rapportino</span>
+                    </button>
+                    <button class="home-card buono disabled">
+                        <span class="home-card-icon">📋</span>
+                        <span class="home-card-label">Buono di consegna</span>
+                        <span class="coming-soon">Prossimamente</span>
+                    </button>
+                    <button class="home-card calendario disabled">
+                        <span class="home-card-icon">📅</span>
+                        <span class="home-card-label">Calendario</span>
+                        <span class="coming-soon">Prossimamente</span>
+                    </button>
+                    <button class="home-card manutenzioni disabled">
+                        <span class="home-card-icon">🔧</span>
+                        <span class="home-card-label">Manutenzioni</span>
+                        <span class="coming-soon">Prossimamente</span>
+                    </button>
+                    <button class="home-card storico" data-navigate="storico">
+                        <span class="home-card-icon">📁</span>
+                        <span class="home-card-label">Storico</span>
+                    </button>
+                </div>
+                
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-label">Questa settimana</div>
@@ -110,17 +136,10 @@
                         <div class="stat-unit">ore</div>
                     </div>
                 </div>
-
-                <div class="section">
-                    <h2>Rapporti recenti</h2>
-                    <div id="recent-reports" class="reports-list">
-                        <p class="empty-state">Nessun rapporto. Crea il tuo primo rapporto!</p>
-                    </div>
-                </div>
             </section>
 
-            <!-- Nuovo Screen (Daily Diary) -->
-            <section id="nuovo-screen" class="screen">
+            <!-- Rapportino Screen (Daily Diary) -->
+            <section id="rapportino-screen" class="screen">
                 <div class="daily-diary-container">
                     <!-- Current Date and Summary -->
                     <div class="day-header">
@@ -148,8 +167,8 @@
                 </div>
             </section>
 
-            <!-- Archivio Screen -->
-            <section id="archivio-screen" class="screen">
+            <!-- Storico Screen -->
+            <section id="storico-screen" class="screen">
                 <div class="filters-section">
                     <h3>Filtri</h3>
                     <div class="filter-field">
@@ -178,17 +197,17 @@
 
         <!-- Bottom Navigation -->
         <nav class="bottom-nav">
-            <button class="nav-btn active" data-screen="dashboard">
-                <span class="nav-icon">📊</span>
-                <span class="nav-label">Dashboard</span>
+            <button class="nav-btn active" data-screen="home">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Home</span>
             </button>
-            <button class="nav-btn" data-screen="nuovo">
-                <span class="nav-icon">➕</span>
-                <span class="nav-label">Nuovo</span>
+            <button class="nav-btn" data-screen="rapportino">
+                <span class="nav-icon">📝</span>
+                <span class="nav-label">Rapportino</span>
             </button>
-            <button class="nav-btn" data-screen="archivio">
+            <button class="nav-btn" data-screen="storico">
                 <span class="nav-icon">📁</span>
-                <span class="nav-label">Archivio</span>
+                <span class="nav-label">Storico</span>
             </button>
         </nav>
     </div>

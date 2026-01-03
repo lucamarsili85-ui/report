@@ -1,126 +1,215 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Work Report - Web Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4CAF50">
+    <title>Rapporto Lavoro Giornaliero</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Daily Work Report</h1>
-            <p class="subtitle">Track your daily work, machines, and materials</p>
+    <!-- Role Picker Modal (shown on first run) -->
+    <div id="role-picker-modal" class="modal hidden">
+        <div class="modal-content role-picker">
+            <h2>Benvenuto!</h2>
+            <p>Seleziona il tuo ruolo:</p>
+            <div class="role-buttons">
+                <button class="role-btn" data-role="autista">
+                    <span class="role-icon">🚛</span>
+                    <span class="role-label">Autista</span>
+                </button>
+                <button class="role-btn" data-role="operatore">
+                    <span class="role-icon">👷</span>
+                    <span class="role-label">Operatore</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content settings">
+            <div class="modal-header">
+                <h2>Impostazioni</h2>
+                <button class="close-btn" id="close-settings">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h3>Ruolo corrente</h3>
+                    <p id="current-role-display" class="role-display"></p>
+                    <button class="btn btn-secondary" id="change-role-btn">Cambia ruolo</button>
+                </div>
+                <div class="settings-section">
+                    <h3>Dati</h3>
+                    <button class="btn btn-danger" id="clear-data-btn">Cancella tutti i dati</button>
+                    <p class="help-text">Questa operazione eliminerà tutti i rapporti salvati. Non può essere annullata.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app" class="app-container">
+        <!-- Header Bar with accent strip -->
+        <header class="header">
+            <div class="header-accent" id="header-accent"></div>
+            <div class="header-content">
+                <h1 id="screen-title">Dashboard</h1>
+                <button class="settings-icon-btn" id="open-settings" aria-label="Impostazioni">⚙️</button>
+            </div>
         </header>
 
-        <nav class="tabs">
-            <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
-            <button class="tab-btn" data-tab="new-report">New Report</button>
-            <button class="tab-btn" data-tab="archive">Archive</button>
+        <!-- Content Area -->
+        <main class="content">
+            <!-- Dashboard Screen -->
+            <section id="dashboard-screen" class="screen active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Questa settimana</div>
+                        <div class="stat-value" id="weekly-hours">0.0</div>
+                        <div class="stat-unit">ore</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Questo mese</div>
+                        <div class="stat-value" id="monthly-hours">0.0</div>
+                        <div class="stat-unit">ore</div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Rapporti recenti</h2>
+                    <div id="recent-reports" class="reports-list">
+                        <p class="empty-state">Nessun rapporto. Crea il tuo primo rapporto!</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Nuovo Screen -->
+            <section id="nuovo-screen" class="screen">
+                <form id="report-form" class="report-form">
+                    <!-- Step 1: Cantiere -->
+                    <div class="form-step">
+                        <div class="step-header">
+                            <span class="step-number">1</span>
+                            <h3>Cantiere</h3>
+                        </div>
+                        <div class="form-field">
+                            <label for="report-date">Data *</label>
+                            <input type="date" id="report-date" required class="input-large">
+                        </div>
+                        <div class="form-field">
+                            <label for="job-site">Cantiere *</label>
+                            <input type="text" id="job-site" required class="input-large" autocomplete="off" placeholder="Inizia a digitare...">
+                            <div id="job-site-suggestions" class="suggestions"></div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Lavoro -->
+                    <div class="form-step">
+                        <div class="step-header">
+                            <span class="step-number">2</span>
+                            <h3>Lavoro</h3>
+                        </div>
+                        <div class="form-field">
+                            <label for="machine">Macchina *</label>
+                            <input type="text" id="machine" required class="input-large" placeholder="es. Escavatore, Bulldozer">
+                        </div>
+                        <div class="form-field">
+                            <label for="hours">Ore lavorate *</label>
+                            <div class="hours-input-group">
+                                <button type="button" class="hours-btn" id="hours-minus" aria-label="Diminuisci ore">−</button>
+                                <input type="number" id="hours" step="0.5" min="0.5" max="24" required class="hours-input" value="8.0">
+                                <button type="button" class="hours-btn" id="hours-plus" aria-label="Aumenta ore">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Materiali -->
+                    <div class="form-step" id="materials-step">
+                        <div class="step-header">
+                            <span class="step-number">3</span>
+                            <h3>Materiali</h3>
+                        </div>
+                        
+                        <!-- Toggle button for Operatore role -->
+                        <button type="button" id="toggle-materials-btn" class="btn btn-secondary hidden">
+                            Aggiungi materiali (opzionale)
+                        </button>
+
+                        <div id="materials-container" class="materials-container">
+                            <div id="materials-list" class="materials-list">
+                                <!-- Material rows will be added here -->
+                            </div>
+                            <button type="button" id="add-material-btn" class="btn btn-secondary btn-full">+ Aggiungi materiale</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Note -->
+                    <div class="form-step">
+                        <div class="step-header">
+                            <span class="step-number">4</span>
+                            <h3>Note</h3>
+                        </div>
+                        <div class="form-field">
+                            <label for="notes">Note (opzionale)</label>
+                            <textarea id="notes" rows="4" class="input-large" placeholder="Note facoltative sul lavoro..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-large">Salva rapporto</button>
+                        <button type="button" id="cancel-btn" class="btn btn-secondary btn-large">Annulla</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Archivio Screen -->
+            <section id="archivio-screen" class="screen">
+                <div class="filters-section">
+                    <h3>Filtri</h3>
+                    <div class="filter-field">
+                        <label for="filter-date-from">Da data</label>
+                        <input type="date" id="filter-date-from" class="input-large">
+                    </div>
+                    <div class="filter-field">
+                        <label for="filter-date-to">A data</label>
+                        <input type="date" id="filter-date-to" class="input-large">
+                    </div>
+                    <div class="filter-field">
+                        <label for="filter-job-site">Cantiere</label>
+                        <input type="text" id="filter-job-site" class="input-large" placeholder="Tutti i cantieri">
+                    </div>
+                    <div class="filter-field">
+                        <label for="filter-machine">Macchina</label>
+                        <input type="text" id="filter-machine" class="input-large" placeholder="Tutte le macchine">
+                    </div>
+                    <div class="filter-actions">
+                        <button id="apply-filters-btn" class="btn btn-primary btn-large">Applica filtri</button>
+                        <button id="clear-filters-btn" class="btn btn-secondary btn-large">Cancella</button>
+                    </div>
+                </div>
+
+                <div id="archive-reports" class="reports-list">
+                    <p class="empty-state">Nessun rapporto trovato.</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-btn active" data-screen="dashboard">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Dashboard</span>
+            </button>
+            <button class="nav-btn" data-screen="nuovo">
+                <span class="nav-icon">➕</span>
+                <span class="nav-label">Nuovo</span>
+            </button>
+            <button class="nav-btn" data-screen="archivio">
+                <span class="nav-icon">📁</span>
+                <span class="nav-label">Archivio</span>
+            </button>
         </nav>
-
-        <!-- Dashboard Tab -->
-        <section id="dashboard" class="tab-content active">
-            <div class="dashboard-grid">
-                <div class="summary-card">
-                    <h3>This Week</h3>
-                    <div class="summary-hours" id="weekly-hours">0.0</div>
-                    <p class="summary-label">hours</p>
-                </div>
-                <div class="summary-card">
-                    <h3>This Month</h3>
-                    <div class="summary-hours" id="monthly-hours">0.0</div>
-                    <p class="summary-label">hours</p>
-                </div>
-            </div>
-
-            <div class="section">
-                <h2>Recent Reports</h2>
-                <div id="recent-reports" class="reports-list">
-                    <p class="empty-state">No reports yet. Create your first report!</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- New Report Tab -->
-        <section id="new-report" class="tab-content">
-            <h2>Create New Report</h2>
-            <form id="report-form" class="report-form">
-                <div class="form-group">
-                    <label for="report-date">Date *</label>
-                    <input type="date" id="report-date" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="job-site">Job Site *</label>
-                    <input type="text" id="job-site" required autocomplete="off" placeholder="Start typing...">
-                    <div id="job-site-suggestions" class="suggestions"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="machine">Machine *</label>
-                    <input type="text" id="machine" required placeholder="e.g., Excavator, Bulldozer">
-                </div>
-
-                <div class="form-group">
-                    <label for="hours">Hours Worked *</label>
-                    <input type="number" id="hours" step="0.5" min="0.1" max="24" required placeholder="8.0">
-                </div>
-
-                <div class="form-group">
-                    <label for="notes">Notes</label>
-                    <textarea id="notes" rows="3" placeholder="Optional notes about the work..."></textarea>
-                </div>
-
-                <div class="section materials-section">
-                    <div class="section-header">
-                        <h3>Materials</h3>
-                        <button type="button" id="add-material-btn" class="btn btn-secondary">+ Add Material</button>
-                    </div>
-                    
-                    <div id="materials-list" class="materials-list">
-                        <!-- Material rows will be added here dynamically -->
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Save Report</button>
-                    <button type="button" id="cancel-btn" class="btn btn-secondary">Cancel</button>
-                </div>
-            </form>
-        </section>
-
-        <!-- Archive Tab -->
-        <section id="archive" class="tab-content">
-            <h2>Reports Archive</h2>
-            
-            <div class="filters">
-                <div class="form-group">
-                    <label for="filter-date-from">From Date</label>
-                    <input type="date" id="filter-date-from">
-                </div>
-                <div class="form-group">
-                    <label for="filter-date-to">To Date</label>
-                    <input type="date" id="filter-date-to">
-                </div>
-                <div class="form-group">
-                    <label for="filter-job-site">Job Site</label>
-                    <input type="text" id="filter-job-site" placeholder="All sites">
-                </div>
-                <div class="form-group">
-                    <label for="filter-machine">Machine</label>
-                    <input type="text" id="filter-machine" placeholder="All machines">
-                </div>
-                <div class="form-group filter-actions">
-                    <button id="apply-filters-btn" class="btn btn-primary">Apply Filters</button>
-                    <button id="clear-filters-btn" class="btn btn-secondary">Clear</button>
-                </div>
-            </div>
-
-            <div id="archive-reports" class="reports-list">
-                <p class="empty-state">No reports found.</p>
-            </div>
-        </section>
     </div>
 
     <script src="app.js"></script>

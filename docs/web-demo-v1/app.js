@@ -1,67 +1,19 @@
-// Storage keys
+// Storage key for LocalStorage
 const STORAGE_KEY = 'dailyWorkReports';
-const ROLE_KEY = 'userRole';
 
 // Application state
 let reports = [];
-let userRole = null;
 let materialCounter = 0;
-let currentScreen = 'dashboard';
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', () => {
     loadReportsFromStorage();
-    loadUserRole();
-    
-    if (!userRole) {
-        showRolePicker();
-    } else {
-        initializeApp();
-    }
-});
-
-// Role management
-function loadUserRole() {
-    try {
-        userRole = localStorage.getItem(ROLE_KEY);
-    } catch (error) {
-        console.error('Error loading user role:', error);
-    }
-}
-
-function saveUserRole(role) {
-    try {
-        userRole = role;
-        localStorage.setItem(ROLE_KEY, role);
-    } catch (error) {
-        console.error('Error saving user role:', error);
-    }
-}
-
-function showRolePicker() {
-    const modal = document.getElementById('role-picker-modal');
-    modal.classList.remove('hidden');
-    
-    document.querySelectorAll('.role-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const role = btn.dataset.role;
-            saveUserRole(role);
-            modal.classList.add('hidden');
-            initializeApp();
-        });
-    });
-}
-
-// Initialize app after role is set
-function initializeApp() {
     setupEventListeners();
-    updateMaterialsVisibility();
     updateDashboard();
     renderRecentReports();
     renderArchiveReports();
     setDefaultDate();
-    switchScreen('dashboard');
-}
+});
 
 // LocalStorage operations
 function loadReportsFromStorage() {
@@ -69,6 +21,7 @@ function loadReportsFromStorage() {
         const data = localStorage.getItem(STORAGE_KEY);
         if (data) {
             const parsed = JSON.parse(data);
+            // Validate data structure
             if (Array.isArray(parsed)) {
                 reports = parsed.map(report => ({
                     id: report.id || Date.now(),
@@ -93,37 +46,23 @@ function saveReportsToStorage() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
     } catch (error) {
         console.error('Error saving reports to storage:', error);
-        alert('Impossibile salvare i dati. Lo storage potrebbe essere pieno.');
+        alert('Failed to save data. Storage might be full.');
     }
 }
 
 // Event listeners setup
 function setupEventListeners() {
-    // Bottom navigation
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const screen = btn.dataset.screen;
-            switchScreen(screen);
-        });
+    // Tab navigation
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
 
-    // Settings
-    document.getElementById('open-settings').addEventListener('click', openSettings);
-    document.getElementById('close-settings').addEventListener('click', closeSettings);
-    document.getElementById('change-role-btn').addEventListener('click', changeRole);
-    document.getElementById('clear-data-btn').addEventListener('click', clearAllData);
-
-    // Report form
+    // Report form submission
     document.getElementById('report-form').addEventListener('submit', handleReportSubmit);
     document.getElementById('cancel-btn').addEventListener('click', resetReportForm);
 
-    // Hours buttons
-    document.getElementById('hours-minus').addEventListener('click', () => adjustHours(-0.5));
-    document.getElementById('hours-plus').addEventListener('click', () => adjustHours(0.5));
-
-    // Materials
+    // Materials management
     document.getElementById('add-material-btn').addEventListener('click', addMaterialRow);
-    document.getElementById('toggle-materials-btn').addEventListener('click', toggleMaterials);
 
     // Job site autocomplete
     const jobSiteInput = document.getElementById('job-site');
@@ -137,124 +76,31 @@ function setupEventListeners() {
     document.getElementById('clear-filters-btn').addEventListener('click', clearFilters);
 }
 
-// Screen switching
-function switchScreen(screenName) {
-    currentScreen = screenName;
-    
-    // Update navigation
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.screen === screenName);
+// Tab switching
+function switchTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
 
-    // Update screens
-    document.querySelectorAll('.screen').forEach(screen => {
-        screen.classList.remove('active');
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.toggle('active', content.id === tabName);
     });
 
-    // Map screen names to IDs
-    const screenMap = {
-        'dashboard': 'dashboard-screen',
-        'nuovo': 'nuovo-screen',
-        'archivio': 'archivio-screen'
-    };
-
-    const screenId = screenMap[screenName];
-    document.getElementById(screenId).classList.add('active');
-
-    // Update header
-    const titles = {
-        'dashboard': 'Dashboard',
-        'nuovo': 'Nuovo Rapporto',
-        'archivio': 'Archivio'
-    };
-    document.getElementById('screen-title').textContent = titles[screenName];
-
-    // Update header accent
-    const accent = document.getElementById('header-accent');
-    accent.className = 'header-accent ' + screenName;
-
-    // Refresh data when needed
-    if (screenName === 'dashboard') {
+    // Refresh data when switching to dashboard or archive
+    if (tabName === 'dashboard') {
         updateDashboard();
         renderRecentReports();
-    } else if (screenName === 'archivio') {
+    } else if (tabName === 'archive') {
         renderArchiveReports();
     }
 }
 
-// Settings
-function openSettings() {
-    document.getElementById('current-role-display').textContent = 
-        userRole === 'autista' ? 'Autista 🚛' : 'Operatore 👷';
-    document.getElementById('settings-modal').classList.remove('hidden');
-}
-
-function closeSettings() {
-    document.getElementById('settings-modal').classList.add('hidden');
-}
-
-function changeRole() {
-    if (confirm('Vuoi cambiare il tuo ruolo?')) {
-        localStorage.removeItem(ROLE_KEY);
-        userRole = null;
-        closeSettings();
-        showRolePicker();
-    }
-}
-
-function clearAllData() {
-    if (confirm('Sei sicuro di voler eliminare tutti i rapporti? Questa operazione non può essere annullata.')) {
-        reports = [];
-        saveReportsToStorage();
-        updateDashboard();
-        renderRecentReports();
-        renderArchiveReports();
-        closeSettings();
-        alert('Tutti i dati sono stati eliminati.');
-    }
-}
-
-// Materials visibility based on role
-function updateMaterialsVisibility() {
-    const toggleBtn = document.getElementById('toggle-materials-btn');
-    const container = document.getElementById('materials-container');
-    
-    if (userRole === 'operatore') {
-        // For Operatore: materials collapsed by default
-        toggleBtn.classList.remove('hidden');
-        container.classList.add('hidden');
-    } else {
-        // For Autista: materials visible by default
-        toggleBtn.classList.add('hidden');
-        container.classList.remove('hidden');
-    }
-}
-
-function toggleMaterials() {
-    const container = document.getElementById('materials-container');
-    const toggleBtn = document.getElementById('toggle-materials-btn');
-    
-    if (container.classList.contains('hidden')) {
-        container.classList.remove('hidden');
-        toggleBtn.textContent = 'Nascondi materiali';
-    } else {
-        container.classList.add('hidden');
-        toggleBtn.textContent = 'Aggiungi materiali (opzionale)';
-    }
-}
-
-// Set default date
+// Set default date to today
 function setDefaultDate() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('report-date').value = today;
-}
-
-// Hours adjustment
-function adjustHours(delta) {
-    const input = document.getElementById('hours');
-    let value = parseFloat(input.value) || 0;
-    value = Math.max(0.5, Math.min(24, value + delta));
-    input.value = value.toFixed(1);
 }
 
 // Dashboard calculations
@@ -269,7 +115,7 @@ function updateDashboard() {
 function calculateWeeklyHours() {
     const now = new Date();
     const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
     weekStart.setHours(0, 0, 0, 0);
 
     return reports
@@ -294,13 +140,19 @@ function renderRecentReports() {
         .slice(0, 5);
 
     if (recentReports.length === 0) {
-        container.innerHTML = '<p class="empty-state">Nessun rapporto. Crea il tuo primo rapporto!</p>';
+        container.innerHTML = '<p class="empty-state">No reports yet. Create your first report!</p>';
         return;
     }
 
     container.innerHTML = recentReports.map(report => createReportCard(report)).join('');
     
-    attachDeleteListeners(container);
+    // Add delete event listeners
+    container.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = parseInt(e.target.dataset.id);
+            deleteReport(id);
+        });
+    });
 }
 
 // Archive reports rendering
@@ -309,19 +161,25 @@ function renderArchiveReports(filteredReports = null) {
     const reportsToShow = filteredReports || [...reports].sort((a, b) => b.date - a.date);
 
     if (reportsToShow.length === 0) {
-        container.innerHTML = '<p class="empty-state">Nessun rapporto trovato.</p>';
+        container.innerHTML = '<p class="empty-state">No reports found.</p>';
         return;
     }
 
     container.innerHTML = reportsToShow.map(report => createReportCard(report)).join('');
     
-    attachDeleteListeners(container);
+    // Add delete event listeners
+    container.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = parseInt(e.target.dataset.id);
+            deleteReport(id);
+        });
+    });
 }
 
 // Create report card HTML
 function createReportCard(report) {
     const date = new Date(report.date);
-    const formattedDate = date.toLocaleDateString('it-IT', { 
+    const formattedDate = date.toLocaleDateString('en-US', { 
         weekday: 'short', 
         year: 'numeric', 
         month: 'short', 
@@ -329,7 +187,7 @@ function createReportCard(report) {
     });
 
     const materialsCount = report.materials && report.materials.length > 0
-        ? `<span class="materials-count">${report.materials.length} materiale${report.materials.length > 1 ? 'i' : ''}</span>`
+        ? `<span class="materials-count">${report.materials.length} material${report.materials.length > 1 ? 's' : ''}</span>`
         : '';
 
     const notesHtml = report.notes
@@ -340,31 +198,20 @@ function createReportCard(report) {
         <div class="report-card">
             <div class="report-header">
                 <div class="report-date">${formattedDate}</div>
-                <div class="report-hours">${report.hoursWorked} ore</div>
+                <div class="report-hours">${report.hoursWorked} hrs</div>
             </div>
             <div class="report-details">
                 <div class="report-detail">
-                    <strong>Cantiere:</strong>
-                    ${escapeHtml(report.jobSite)}
+                    <strong>Job Site:</strong> ${escapeHtml(report.jobSite)}
                 </div>
                 <div class="report-detail">
-                    <strong>Macchina:</strong>
-                    ${escapeHtml(report.machine)} ${materialsCount}
+                    <strong>Machine:</strong> ${escapeHtml(report.machine)} ${materialsCount}
                 </div>
             </div>
             ${notesHtml}
-            <button class="btn-delete" data-id="${report.id}">Elimina</button>
+            <button class="btn-delete" data-id="${report.id}">Delete</button>
         </div>
     `;
-}
-
-function attachDeleteListeners(container) {
-    container.querySelectorAll('.btn-delete').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const id = parseInt(e.target.dataset.id);
-            deleteReport(id);
-        });
-    });
 }
 
 // Job site autocomplete
@@ -376,6 +223,7 @@ function handleJobSiteInput(e) {
         return;
     }
 
+    // Get unique job sites from existing reports
     const jobSites = [...new Set(reports.map(r => r.jobSite))];
     const matches = jobSites.filter(site => 
         site.toLowerCase().includes(input)
@@ -396,6 +244,7 @@ function showSuggestions(suggestions) {
     
     container.classList.add('show');
 
+    // Add click handlers
     container.querySelectorAll('.suggestion-item').forEach(item => {
         item.addEventListener('click', () => {
             document.getElementById('job-site').value = item.dataset.value;
@@ -416,11 +265,11 @@ function addMaterialRow() {
     row.className = 'material-row';
     row.dataset.id = materialCounter;
     row.innerHTML = `
-        <input type="text" placeholder="Nome materiale" class="material-name">
-        <input type="number" placeholder="Quantità" class="material-quantity" step="0.1" min="0.1">
-        <input type="text" placeholder="Unità (es. m³, kg)" class="material-unit">
-        <input type="text" placeholder="Note (opzionale)" class="material-note">
-        <button type="button" class="btn btn-remove" onclick="removeMaterialRow(${materialCounter})">Rimuovi</button>
+        <input type="text" placeholder="Material name" class="material-name">
+        <input type="number" placeholder="Qty" class="material-quantity" step="0.1" min="0.1">
+        <input type="text" placeholder="Unit" class="material-unit">
+        <input type="text" placeholder="Note (optional)" class="material-note">
+        <button type="button" class="btn-remove" onclick="removeMaterialRow(${materialCounter})">Remove</button>
     `;
     container.appendChild(row);
 }
@@ -436,6 +285,7 @@ function removeMaterialRow(id) {
 function handleReportSubmit(e) {
     e.preventDefault();
 
+    // Get form values
     const dateValue = document.getElementById('report-date').value;
     const jobSite = document.getElementById('job-site').value.trim();
     const machine = document.getElementById('machine').value.trim();
@@ -444,27 +294,27 @@ function handleReportSubmit(e) {
 
     // Validation
     if (!dateValue || !jobSite || !machine || !hours) {
-        alert('Compila tutti i campi obbligatori.');
+        alert('Please fill in all required fields.');
         return;
     }
 
     if (hours <= 0 || hours > 24) {
-        alert('Le ore devono essere tra 0.5 e 24.');
+        alert('Hours must be between 0.1 and 24.');
         return;
     }
 
     if (jobSite.length > 100) {
-        alert('Il nome del cantiere deve essere massimo 100 caratteri.');
+        alert('Job site name must be 100 characters or less.');
         return;
     }
 
     if (machine.length > 50) {
-        alert('Il nome della macchina deve essere massimo 50 caratteri.');
+        alert('Machine name must be 50 characters or less.');
         return;
     }
 
     if (notes.length > 500) {
-        alert('Le note devono essere massimo 500 caratteri.');
+        alert('Notes must be 500 characters or less.');
         return;
     }
 
@@ -478,7 +328,7 @@ function handleReportSubmit(e) {
 
         if (name && quantity && unit) {
             if (quantity <= 0) {
-                alert('La quantità del materiale deve essere maggiore di 0.');
+                alert('Material quantity must be greater than 0.');
                 return;
             }
             materials.push({ name, quantity, unit, note });
@@ -503,9 +353,9 @@ function handleReportSubmit(e) {
 
     // Reset form and switch to dashboard
     resetReportForm();
-    switchScreen('dashboard');
+    switchTab('dashboard');
     
-    alert('Rapporto salvato con successo!');
+    alert('Report saved successfully!');
 }
 
 function resetReportForm() {
@@ -513,10 +363,6 @@ function resetReportForm() {
     document.getElementById('materials-list').innerHTML = '';
     setDefaultDate();
     hideSuggestions();
-    updateMaterialsVisibility();
-    
-    // Reset hours to default
-    document.getElementById('hours').value = '8.0';
 }
 
 // Archive filtering
@@ -528,30 +374,33 @@ function applyFilters() {
 
     let filtered = [...reports];
 
+    // Date range filter
     if (dateFrom) {
         const fromTime = new Date(dateFrom).getTime();
         filtered = filtered.filter(report => report.date >= fromTime);
     }
 
     if (dateTo) {
-        const toDate = new Date(dateTo);
-        toDate.setHours(23, 59, 59, 999);
-        const toTime = toDate.getTime();
+        const toTime = new Date(dateTo).getTime();
+        toTime.setHours(23, 59, 59, 999); // End of day
         filtered = filtered.filter(report => report.date <= toTime);
     }
 
+    // Job site filter
     if (jobSite) {
         filtered = filtered.filter(report => 
             report.jobSite.toLowerCase().includes(jobSite)
         );
     }
 
+    // Machine filter
     if (machine) {
         filtered = filtered.filter(report => 
             report.machine.toLowerCase().includes(machine)
         );
     }
 
+    // Sort by date descending
     filtered.sort((a, b) => b.date - a.date);
 
     renderArchiveReports(filtered);
@@ -567,7 +416,7 @@ function clearFilters() {
 
 // Delete report
 function deleteReport(id) {
-    if (!confirm('Sei sicuro di voler eliminare questo rapporto?')) {
+    if (!confirm('Are you sure you want to delete this report?')) {
         return;
     }
 
@@ -575,14 +424,15 @@ function deleteReport(id) {
     saveReportsToStorage();
 
     // Refresh current view
-    if (currentScreen === 'dashboard') {
+    const activeTab = document.querySelector('.tab-content.active').id;
+    if (activeTab === 'dashboard') {
         updateDashboard();
         renderRecentReports();
-    } else if (currentScreen === 'archivio') {
+    } else if (activeTab === 'archive') {
         renderArchiveReports();
     }
 
-    alert('Rapporto eliminato con successo.');
+    alert('Report deleted successfully.');
 }
 
 // Utility function to escape HTML

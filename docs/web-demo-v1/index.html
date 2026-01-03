@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Work Report - Web Demo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Daily Work Report</h1>
+            <p class="subtitle">Track your daily work, machines, and materials</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+            <button class="tab-btn" data-tab="new-report">New Report</button>
+            <button class="tab-btn" data-tab="archive">Archive</button>
+        </nav>
+
+        <!-- Dashboard Tab -->
+        <section id="dashboard" class="tab-content active">
+            <div class="dashboard-grid">
+                <div class="summary-card">
+                    <h3>This Week</h3>
+                    <div class="summary-hours" id="weekly-hours">0.0</div>
+                    <p class="summary-label">hours</p>
+                </div>
+                <div class="summary-card">
+                    <h3>This Month</h3>
+                    <div class="summary-hours" id="monthly-hours">0.0</div>
+                    <p class="summary-label">hours</p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Recent Reports</h2>
+                <div id="recent-reports" class="reports-list">
+                    <p class="empty-state">No reports yet. Create your first report!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- New Report Tab -->
+        <section id="new-report" class="tab-content">
+            <h2>Create New Report</h2>
+            <form id="report-form" class="report-form">
+                <div class="form-group">
+                    <label for="report-date">Date *</label>
+                    <input type="date" id="report-date" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="job-site">Job Site *</label>
+                    <input type="text" id="job-site" required autocomplete="off" placeholder="Start typing...">
+                    <div id="job-site-suggestions" class="suggestions"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="machine">Machine *</label>
+                    <input type="text" id="machine" required placeholder="e.g., Excavator, Bulldozer">
+                </div>
+
+                <div class="form-group">
+                    <label for="hours">Hours Worked *</label>
+                    <input type="number" id="hours" step="0.5" min="0.1" max="24" required placeholder="8.0">
+                </div>
+
+                <div class="form-group">
+                    <label for="notes">Notes</label>
+                    <textarea id="notes" rows="3" placeholder="Optional notes about the work..."></textarea>
+                </div>
+
+                <div class="section materials-section">
+                    <div class="section-header">
+                        <h3>Materials</h3>
+                        <button type="button" id="add-material-btn" class="btn btn-secondary">+ Add Material</button>
+                    </div>
+                    
+                    <div id="materials-list" class="materials-list">
+                        <!-- Material rows will be added here dynamically -->
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Report</button>
+                    <button type="button" id="cancel-btn" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Archive Tab -->
+        <section id="archive" class="tab-content">
+            <h2>Reports Archive</h2>
+            
+            <div class="filters">
+                <div class="form-group">
+                    <label for="filter-date-from">From Date</label>
+                    <input type="date" id="filter-date-from">
+                </div>
+                <div class="form-group">
+                    <label for="filter-date-to">To Date</label>
+                    <input type="date" id="filter-date-to">
+                </div>
+                <div class="form-group">
+                    <label for="filter-job-site">Job Site</label>
+                    <input type="text" id="filter-job-site" placeholder="All sites">
+                </div>
+                <div class="form-group">
+                    <label for="filter-machine">Machine</label>
+                    <input type="text" id="filter-machine" placeholder="All machines">
+                </div>
+                <div class="form-group filter-actions">
+                    <button id="apply-filters-btn" class="btn btn-primary">Apply Filters</button>
+                    <button id="clear-filters-btn" class="btn btn-secondary">Clear</button>
+                </div>
+            </div>
+
+            <div id="archive-reports" class="reports-list">
+                <p class="empty-state">No reports found.</p>
+            </div>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

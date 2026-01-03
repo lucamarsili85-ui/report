@@ -114,10 +114,35 @@ body {
     background-color: var(--color-border);
 }
 
+/* Back Arrow Button */
+.back-arrow-btn {
+    background: none;
+    border: none;
+    color: var(--color-text);
+    padding: var(--spacing-xs);
+    cursor: pointer;
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+    margin-right: var(--spacing-sm);
+}
+
+.back-arrow-btn:active {
+    background-color: var(--color-border);
+}
+
+.back-arrow-btn.hidden {
+    display: none;
+}
+
 /* Content Area */
 .content {
     flex: 1;
-    padding-bottom: 80px; /* Space for bottom nav */
+    padding-bottom: var(--spacing-lg); /* Removed bottom nav, less padding needed */
     overflow-y: auto;
 }
 
@@ -595,6 +620,28 @@ textarea.input-large {
     background: #D32F2F;
 }
 
+.btn-success {
+    background: var(--color-primary);
+    color: white;
+    font-weight: 700;
+}
+
+.btn-success:active {
+    background: var(--color-primary-dark);
+    transform: scale(0.98);
+}
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid var(--color-primary);
+    color: var(--color-primary);
+}
+
+.btn-outline:active {
+    background: var(--color-primary);
+    color: white;
+}
+
 .btn-remove {
     background: var(--color-danger);
     color: white;
@@ -659,52 +706,6 @@ textarea.input-large {
     flex-direction: column;
     gap: var(--spacing-sm);
     margin-top: var(--spacing-md);
-}
-
-/* Bottom Navigation */
-.bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    background: var(--color-surface);
-    border-top: 1px solid var(--color-border);
-    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
-    z-index: 100;
-}
-
-.nav-btn {
-    background: none;
-    border: none;
-    padding: var(--spacing-sm);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    cursor: pointer;
-    min-height: 64px;
-    transition: background-color 0.2s;
-    color: var(--color-text-secondary);
-}
-
-.nav-btn:active {
-    background: var(--color-bg);
-}
-
-.nav-btn.active {
-    color: var(--color-primary);
-}
-
-.nav-icon {
-    font-size: var(--font-size-xl);
-}
-
-.nav-label {
-    font-size: var(--font-size-xs);
-    font-weight: 600;
 }
 
 /* Modal */
@@ -1250,6 +1251,251 @@ textarea.input-entry {
 
 .btn-view:active {
     background: var(--color-primary-dark);
+}
+
+/* Client Slides - New Rapportino UI */
+.client-slides {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.client-slide {
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-md);
+    transition: box-shadow 0.2s;
+}
+
+.client-slide:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+.client-slide-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 2px solid var(--color-border);
+}
+
+.client-info-compact {
+    flex: 1;
+}
+
+.client-info-compact h3 {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0 0 var(--spacing-xs) 0;
+}
+
+.client-info-compact .job-site {
+    font-size: var(--font-size-md);
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.btn-icon-remove {
+    background: none;
+    border: 1px solid var(--color-danger);
+    color: var(--color-danger);
+    padding: var(--spacing-xs);
+    border-radius: 50%;
+    cursor: pointer;
+    min-width: 40px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-icon-remove:active {
+    background: var(--color-danger);
+    color: white;
+}
+
+/* Activities Section */
+.activities-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.activities-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.activity-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md);
+}
+
+.activity-card.mezzo {
+    border-left: 4px solid #4CAF50;
+}
+
+.activity-card.materiale {
+    border-left: 4px solid #2196F3;
+}
+
+.activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.activity-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    padding: 4px var(--spacing-sm);
+    border-radius: 4px;
+}
+
+.activity-type-badge.mezzo {
+    background: #E8F5E9;
+    color: #2E7D32;
+}
+
+.activity-type-badge.materiale {
+    background: #E3F2FD;
+    color: #1565C0;
+}
+
+.btn-icon-remove-small {
+    background: none;
+    border: none;
+    color: var(--color-danger);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    min-width: 32px;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.btn-icon-remove-small:active {
+    background: var(--color-border);
+}
+
+.activity-fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.input-activity {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    font-size: var(--font-size-md);
+    font-family: inherit;
+    min-height: var(--touch-target);
+}
+
+.input-activity:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+}
+
+.input-group {
+    display: flex;
+    gap: var(--spacing-xs);
+    align-items: center;
+}
+
+.input-group .input-activity {
+    flex: 1;
+}
+
+.input-suffix {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.input-unit {
+    width: auto;
+    min-width: 80px;
+}
+
+/* Activity Actions */
+.activity-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-sm);
+}
+
+.btn-add-activity {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+}
+
+.btn-add-activity svg {
+    flex-shrink: 0;
+}
+
+/* Empty States */
+.empty-state-card {
+    background: var(--color-surface);
+    padding: var(--spacing-xl);
+    border-radius: var(--border-radius);
+    text-align: center;
+    border: 2px dashed var(--color-border);
+}
+
+.empty-state-card p {
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.empty-state-card .help-text {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.empty-state-small {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    text-align: center;
+    padding: var(--spacing-md);
+}
+
+/* Add Client Modal */
+.add-client {
+    max-width: 500px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
+}
+
+.modal-actions .btn {
+    flex: 1;
 }
 
 /* Utility Classes */

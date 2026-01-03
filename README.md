@@ -91,7 +91,25 @@ UI (Compose) → ViewModel → Repository → DAO → Room Database
 - ✅ **Material Design 3** - Modern UI components
 - ✅ **PDF Export Ready** - Specification for exporting reports to PDF format
 
-### NEW: Mobile-First Progressive Diary (web-demo-v2)
+### NEW: Daily Journal with Progressive Save (Android Implementation)
+- ✅ **DRAFT/FINAL State Management** - Edit drafts, lock finalized reports
+- ✅ **Progressive Saving** - All activities auto-saved immediately to database
+- ✅ **Resume Draft** - Automatically resume today's draft when reopening app
+- ✅ **Multi-Client Daily Reports** - Single daily report contains multiple clients
+- ✅ **Preview Dashboard** - Summary view showing total hours, client count
+- ✅ **Client Sections** - Collapsible cards per client with activities
+- ✅ **Machine Activities** - Name, hours (manual input), optional description
+- ✅ **Material Activities** - Name, quantity, unit toggle (m³/ton), notes
+- ✅ **Live Total Hours** - Real-time calculation across all machine activities
+- ✅ **End-of-Day Finalization** - Lock report and store in history
+- ✅ **Reopen for Editing** - Transition finalized reports back to draft
+- ✅ **History View** - View all finalized reports with status badges
+
+See `/DAILY_JOURNAL_IMPLEMENTATION.md` for complete technical documentation.
+See `/INTEGRATION_EXAMPLE.md` for integration guide.
+
+### Web Demo (web-demo-v2)
+- ✅ **JavaScript Implementation** - Browser-based demo of daily journal workflow
 - ✅ **Multi-Client Daily Reports** - Single daily report contains multiple clients
 - ✅ **Progressive Saving** - Activities saved immediately as you work
 - ✅ **Colored Client Sections** - Visual distinction with colored borders
@@ -104,15 +122,55 @@ UI (Compose) → ViewModel → Repository → DAO → Room Database
 - ✅ **Italian Language** - Complete Italian interface
 - ✅ **History/Archive** - View all finalized reports
 
-See `/docs/web-demo-v2/` for the complete implementation.
+See `/docs/web-demo-v2/` for the web demo implementation.
 
 ## Data Models
 
-### Legacy Models (Single-Client Reports)
-- `WorkReport.kt` - Single work report with one job site and machine
-- `Material.kt` - Material used in a work report
+### Current: Daily Journal Models (Android Implementation)
 
-### NEW: Multi-Client Progressive Diary Models
+The Android app now uses the Daily Journal architecture with full Room database support:
+
+**DailyReportEntity** (`app_structure/DailyReportEntity.kt`)
+- Container for a full day's work across multiple clients
+- Status: DRAFT (editable) or FINAL (locked)
+- Tracks: date, total hours, trasferta, finalization timestamp
+- Progressive save support
+
+**ClientSectionEntity** (`app_structure/ClientSectionEntity.kt`)
+- Represents one client within a daily report
+- Client name and job site location
+- Contains multiple activities
+- Color identifier for visual distinction
+
+**ActivityEntity** (`app_structure/ActivityEntity.kt`)
+- Base entity for both machine and material activities
+- Type: MACHINE or MATERIAL
+- Machine: name, hours, description
+- Material: name, quantity, unit (m³/ton), notes
+
+**Data Access Layer:**
+- `DailyReportDao` - Database queries with Flow support
+- `DailyReportRepository` - Business logic and data operations
+- `DailyReportViewModel` - UI state management with StateFlow
+
+**UI Components:**
+- `DailyJournalScreen` - Main daily journal with preview dashboard
+- `DashboardScreen` - History view with finalized reports
+
+### Legacy: Single-Client Models
+
+**WorkReport** (Legacy - maintained for backward compatibility)
+- Single work report with one job site and machine
+- `WorkReport.kt` (entity) - Room database entity
+- `domain/WorkReport.kt` - Domain model
+
+**Material** (Legacy)
+- Material used in a work report
+
+### Domain Models (Conceptual)
+
+These domain models in `/domain` represent the conceptual data structure:
+
 - `DailyReport.kt` - Container for a full day's work across multiple clients
   - Contains multiple `ClientSection` instances
   - Tracks draft/finalized status

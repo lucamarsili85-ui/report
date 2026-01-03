@@ -4,7 +4,11 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.example.workreport.data.dao.DailyReportDao
 import com.example.workreport.data.dao.WorkReportDao
+import com.example.workreport.data.entity.ActivityEntity
+import com.example.workreport.data.entity.ClientSectionEntity
+import com.example.workreport.data.entity.DailyReportEntity
 import com.example.workreport.data.entity.WorkReport
 
 /**
@@ -12,18 +16,30 @@ import com.example.workreport.data.entity.WorkReport
  * 
  * This is the main database configuration. It defines the entities and version,
  * and provides access to the DAOs.
+ * 
+ * Version 2 adds support for DailyReport with multiple clients and activities.
  */
 @Database(
-    entities = [WorkReport::class],
-    version = 1,
+    entities = [
+        WorkReport::class,
+        DailyReportEntity::class,
+        ClientSectionEntity::class,
+        ActivityEntity::class
+    ],
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     
     /**
-     * Provides access to WorkReport DAO
+     * Provides access to WorkReport DAO (legacy)
      */
     abstract fun workReportDao(): WorkReportDao
+    
+    /**
+     * Provides access to DailyReport DAO
+     */
+    abstract fun dailyReportDao(): DailyReportDao
     
     companion object {
         // Singleton prevents multiple instances of database opening at the same time

@@ -11,15 +11,22 @@ Una versione mobile-first dell'applicazione web per il tracciamento dei rapporti
 - **Responsive**: Si adatta a telefoni, tablet e desktop
 
 ### Navigazione
+- **Home Page**: Caselle grandi e touch-friendly per accedere alle sezioni principali:
+  - 📝 **Rapportino**: Diario giornaliero con gestione clienti e attività
+  - 📋 **Buono di consegna**: Placeholder (prossimamente)
+  - 📅 **Calendario**: Placeholder (prossimamente)
+  - 🔧 **Manutenzioni**: Placeholder (prossimamente)
+  - 📁 **Storico**: Visualizza e filtra tutti i rapporti salvati
+
 - **Bottom navigation** con 3 schede:
-  - 📊 **Dashboard**: Visualizza ore settimanali e mensili, rapporti recenti
-  - ➕ **Nuovo**: Crea un nuovo rapporto di lavoro
-  - 📁 **Archivio**: Visualizza e filtra tutti i rapporti
+  - 🏠 **Home**: Pagina principale con accesso rapido alle sezioni
+  - 📝 **Rapportino**: Diario giornaliero
+  - 📁 **Storico**: Archivio rapporti
 
 - **Header bar** con barra di accento colorata:
-  - Dashboard = blu
-  - Nuovo = verde
-  - Archivio = arancione
+  - Home = verde
+  - Rapportino = blu
+  - Storico = arancione
 
 ### Sistema di ruoli
 - **Prima esecuzione**: Selezione ruolo "Autista" 🚛 o "Operatore" 👷
@@ -28,19 +35,31 @@ Una versione mobile-first dell'applicazione web per il tracciamento dei rapporti
   - **Operatore**: Sezione materiali nascosta con pulsante "Aggiungi materiali (opzionale)"
 - **Impostazioni**: Cambia ruolo o cancella tutti i dati
 
-### Nuovo Rapporto - Sezioni a passi
-1. **Cantiere**: Data e nome cantiere con autocomplete
-2. **Lavoro**: Macchina e ore lavorate con pulsanti +/- e input manuale
-3. **Materiali**: Aggiungi materiali con nome, quantità, unità e note
-4. **Note**: Note opzionali sul lavoro
+### Rapportino (Diario Giornaliero)
+- **Gestione multi-cliente**: Aggiungi più clienti nella stessa giornata
+- **Card colorate per cliente**: Ogni cliente ha una card con bordo colorato e badge località
+- **Dati cliente**:
+  - Nome Cliente
+  - Nome Cantiere
+  - Località Cantiere
+- **Voci per cliente**: Ogni cliente può avere più voci di tre tipi:
+  1. **Attività**: Macchina, ore lavorate (input numerico con tastiera decimale), note
+  2. **Materiale**: Nome, quantità, unità (m³ o ton con selezione rapida), località da/a
+  3. **Movimento Veicolo**: Veicolo, metodo trasporto, località da/a, note
+- **Anteprima ore totali**: Calcolo automatico delle ore giornaliere
+- **Finalizza giornata**: Salva il rapporto completo
 
 ### Funzionalità
-- ✅ Autocomplete per cantieri (suggerimenti da rapporti precedenti)
-- ✅ Input ore con grandi pulsanti +/- (incremento 0.5 ore)
-- ✅ Gestione materiali dinamica
-- ✅ Filtri archivio (data, cantiere, macchina)
-- ✅ Persistenza localStorage
-- ✅ Compatibilità dati con versione precedente
+- ✅ **Home page con sezioni touch-friendly**: Accesso rapido a tutte le funzioni
+- ✅ **Multi-cliente giornaliero**: Gestisci più clienti nella stessa giornata
+- ✅ **Card cliente colorate**: Visualizzazione chiara con bordi colorati e badge località
+- ✅ **Input numerico per ore**: Tastiera numerica dedicata (inputmode="decimal")
+- ✅ **Selezione unità m³/ton**: Radio buttons per materiali
+- ✅ **Tre tipi di voce**: Attività, Materiali, Movimento Veicolo
+- ✅ **Conferma eliminazione**: Dialogo di conferma per tutte le operazioni di eliminazione
+- ✅ **Filtri archivio**: Filtra per data e cliente/cantiere
+- ✅ **Persistenza localStorage**: Dati salvati localmente
+- ✅ **IDs univoci**: Ogni giornata, cliente e voce ha un ID univoco
 
 ## Come usare
 
@@ -51,25 +70,27 @@ Una versione mobile-first dell'applicazione web per il tracciamento dei rapporti
 4. Inizia a creare rapporti!
 
 ### Creare un rapporto
-1. Tocca **Nuovo** nella barra di navigazione
-2. Compila i campi obbligatori (*):
-   - **Data**: Seleziona la data del lavoro
-   - **Cantiere**: Digita il nome del cantiere (l'autocomplete suggerirà quelli usati prima)
-   - **Macchina**: Inserisci la macchina o attrezzatura usata
-   - **Ore lavorate**: Usa i pulsanti +/- o digita manualmente
-3. Aggiungi materiali (opzionale):
-   - Se sei Autista: la sezione è già visibile
-   - Se sei Operatore: tocca "Aggiungi materiali (opzionale)"
-   - Tocca "+ Aggiungi materiale" per aggiungere righe
-4. Aggiungi note (opzionale)
-5. Tocca **Salva rapporto**
+1. Tocca **Rapportino** nella home page o nella barra di navigazione
+2. Tocca **+ Aggiungi Cliente** per aggiungere un nuovo cliente
+3. Compila i dati del cliente:
+   - **Nome Cliente**: Nome dell'azienda o persona
+   - **Nome Cantiere**: Nome o descrizione del cantiere
+   - **Località Cantiere**: Città o indirizzo (appare nel badge)
+4. Tocca **+ Aggiungi Voce** e seleziona il tipo:
+   - **Attività**: Per ore lavorate con macchina
+   - **Materiale**: Per materiali utilizzati o trasportati
+   - **Movimento Veicolo**: Per spostamenti mezzi
+5. Compila i campi della voce selezionata
+6. Ripeti i passi 4-5 per aggiungere più voci
+7. Ripeti i passi 2-6 per aggiungere più clienti
+8. Tocca **Finalizza Giornata** per salvare il rapporto completo
 
 ### Visualizzare i rapporti
-- **Dashboard**: Mostra ore totali settimanali e mensili + 5 rapporti più recenti
-- **Archivio**: Visualizza tutti i rapporti con opzioni di filtro
+- **Home**: Mostra statistiche ore settimanali e mensili
+- **Storico**: Visualizza tutti i rapporti finalizzati
   - Filtra per intervallo di date
-  - Filtra per nome cantiere
-  - Filtra per nome macchina
+  - Filtra per nome cliente o cantiere
+  - Tocca "Visualizza" per vedere i dettagli completi di un rapporto
 
 ### Gestire le impostazioni
 1. Tocca l'icona ⚙️ in alto a destra
@@ -105,25 +126,83 @@ Funziona in tutti i browser moderni che supportano:
 Testato in: Chrome, Firefox, Safari, Edge
 
 ### Formato dati
-I rapporti sono salvati in localStorage come JSON con questa struttura:
 
+#### DraftDay (Giornata in bozza)
 ```javascript
 {
-  id: 1234567890,
-  date: 1704326400000,  // Unix timestamp
-  jobSite: "Cantiere A",
-  machine: "Escavatore CAT 320",
-  hoursWorked: 8.5,
-  notes: "Completato scavo fondamenta",
-  materials: [
-    {
-      name: "Cemento",
-      quantity: 15.5,
-      unit: "m³",
-      note: "Grado C30"
-    }
-  ],
+  id: 1234567890.123,           // ID univoco
+  date: "2026-01-03",           // Data YYYY-MM-DD
+  role: "autista",              // Ruolo utente
+  status: "draft",              // "draft" o "closed"
+  clients: [/* array ClientSection */],
   createdAt: 1704326400000
+}
+```
+
+#### ClientSection (Sezione cliente)
+```javascript
+{
+  id: 1234567890.456,           // ID univoco
+  clientName: "Costruzioni Rossi SRL",
+  jobSiteName: "Cantiere Via Roma",
+  jobSiteLocation: "Milano",
+  entries: [/* array Entry */]
+}
+```
+
+#### Entry (Voce: Attività, Materiale, o Movimento)
+```javascript
+// Attività
+{
+  id: 1234567890.789,
+  type: "activity",
+  data: {
+    machine: "Escavatore CAT 320",
+    hours: 8.0,
+    notes: "Scavo fondamenta"
+  },
+  createdAt: 1704326400000
+}
+
+// Materiale
+{
+  id: 1234567890.101,
+  type: "material",
+  data: {
+    name: "Cemento",
+    quantity: 15.5,
+    unit: "mc",  // "mc" (m³) o "ton"
+    fromLocation: "Deposito A",
+    toLocation: "Cantiere Via Roma"
+  },
+  createdAt: 1704326400000
+}
+
+// Movimento Veicolo
+{
+  id: 1234567890.112,
+  type: "vehicleMovement",
+  data: {
+    vehicle: "Camion IVECO 450",
+    transportMethod: "Strada",
+    fromLocation: "Deposito",
+    toLocation: "Cantiere",
+    notes: "Trasporto materiali"
+  },
+  createdAt: 1704326400000
+}
+```
+
+#### SavedReport (Rapporto finalizzato)
+```javascript
+{
+  id: 1234567890.123,           // Stesso ID della DraftDay
+  date: "2026-01-03",
+  role: "autista",
+  clients: [/* array ClientSection */],
+  totalHours: 16.0,             // Calcolato automaticamente
+  createdAt: 1704326400000,
+  finalizedAt: 1704330000000
 }
 ```
 
@@ -135,8 +214,24 @@ localStorage.getItem('userRole') // 'autista' o 'operatore'
 
 ## Differenze dalla versione precedente (web-demo-v1)
 
-### Design
-- Layout mobile-first ottimizzato per touch
+### Design e Navigazione
+- **Home page centralizzata**: Nuova pagina iniziale con card grandi per accesso alle sezioni
+- **Struttura semplificata**: Home, Rapportino, Storico invece di Dashboard, Nuovo, Archivio
+- **Card colorate per cliente**: Ogni cliente ha bordo colorato univoco e badge località
+- **Placeholder sezioni future**: Buono di consegna, Calendario, Manutenzioni visibili ma disabilitati
+
+### Modello Dati
+- **Gestione multi-cliente giornaliera**: Un rapporto può contenere più clienti
+- **IDs univoci gerarchici**: Giornata → Cliente → Voce
+- **Tre tipi di voci**: Attività, Materiale, Movimento Veicolo (invece di solo materiali)
+- **Struttura più ricca**: Dati cliente completi (nome, cantiere, località)
+
+### Funzionalità
+- **Input numerico ottimizzato**: `inputmode="decimal"` per tastiera numerica su mobile
+- **Unità m³/ton**: Selezione rapida con radio buttons
+- **Località per materiali**: Campi "Da" e "A" per tracciare spostamenti
+- **Conferme obbligatorie**: Dialogo di conferma per tutte le eliminazioni
+- **Anteprima ore totali**: Calcolo automatico visibile in tempo reale
 - Navigazione bottom invece di tab in alto
 - Barra di accento colorata nell'header
 - Font più grandi e spaziatura generosa
@@ -151,16 +246,20 @@ localStorage.getItem('userRole') // 'autista' o 'operatore'
 - Interfaccia completamente in italiano
 
 ### Compatibilità dati
-✅ Stessa struttura dati localStorage
-✅ Stessa chiave storage: `dailyWorkReports`
-✅ I dati creati nella versione precedente sono compatibili
+⚠️ **Struttura dati completamente rinnovata**
+- Nuovo modello dati con giornate, clienti multipli e voci strutturate
+- Chiavi storage: `draftDays` (bozze) e `savedReports` (finalizzati)
+- Non compatibile con i dati della versione precedente
+- Per migrare: esportare i dati vecchi e reinserirli manualmente
 
 ## Limitazioni
 - Dati salvati localmente (specifici del browser, non sincronizzati)
 - Nessuna autenticazione utente
-- Nessuna funzionalità export/import dati
+- Nessuna funzionalità export PDF (specificato nei requisiti ma non implementato)
+- Nessuna funzionalità import/export dati
 - Nessuna integrazione API backend
 - Limitato alla capacità localStorage del browser (~5-10MB)
+- Modifiche ai rapporti finalizzati non ancora implementate
 
 ## GitHub Pages
 Questa demo è accessibile tramite GitHub Pages all'indirizzo:

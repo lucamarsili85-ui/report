@@ -2,6 +2,10 @@
 const CURRENT_REPORT_KEY = 'currentDailyReport';
 const SAVED_REPORTS_KEY = 'savedDailyReports';
 
+// Status constants
+const STATUS_DRAFT = 'draft';
+const STATUS_FINAL = 'final';
+
 // Application state
 let currentReport = null;
 let savedReports = [];
@@ -17,7 +21,7 @@ class DailyReport {
         this.id = Date.now();
         this.date = date; // YYYY-MM-DD
         this.clients = [];
-        this.status = 'draft'; // 'draft' or 'finalized'
+        this.status = STATUS_DRAFT; // 'draft' or 'final'
         this.createdAt = Date.now();
     }
     
@@ -31,6 +35,14 @@ class DailyReport {
             });
         });
         return total;
+    }
+    
+    isDraft() {
+        return this.status === STATUS_DRAFT;
+    }
+    
+    isFinalized() {
+        return this.status === STATUS_FINAL;
     }
 }
 
@@ -106,7 +118,7 @@ function setupEventListeners() {
     // Daily report screen
     document.getElementById('back-to-home').addEventListener('click', () => showScreen('home-screen'));
     document.getElementById('create-client-btn').addEventListener('click', createClientSection);
-    document.getElementById('save-report-btn').addEventListener('click', finalizeDailyReport);
+    document.getElementById('save-report-btn').addEventListener('click', handleSaveButtonClick);
     
     // History screen
     document.getElementById('back-from-history').addEventListener('click', () => showScreen('home-screen'));
@@ -126,6 +138,15 @@ function setupEventListeners() {
         }
         hideModal('confirm-dialog');
     });
+}
+
+// Handle save button click - either finalize or reopen for editing
+function handleSaveButtonClick() {
+    if (currentReport.isFinalized()) {
+        reopenReportForEditing();
+    } else {
+        finalizeDailyReport();
+    }
 }
 
 // Screen management
@@ -173,12 +194,22 @@ function updateDailyReportScreen() {
     const dateStr = formatDate(currentReport.date);
     document.getElementById('current-date').textContent = dateStr;
     
+    const isInPreviewMode = currentReport.isFinalized();
+    
+    // Show/hide new client dashboard based on status
+    const newClientDashboard = document.getElementById('new-client-dashboard');
+    if (isInPreviewMode) {
+        newClientDashboard.classList.add('hidden');
+    } else {
+        newClientDashboard.classList.remove('hidden');
+    }
+    
     // Update clients container
     const container = document.getElementById('clients-container');
     container.innerHTML = '';
     
     currentReport.clients.forEach((client, index) => {
-        const clientElement = createClientElement(client, index);
+        const clientElement = createClientElement(client, index, isInPreviewMode);
         container.appendChild(clientElement);
     });
     
@@ -187,19 +218,46 @@ function updateDailyReportScreen() {
     document.getElementById('total-hours').textContent = totalHours.toFixed(1);
     
     // Show/hide total hours and save button
+    const totalHoursPreview = document.getElementById('total-hours-preview');
+    const saveButton = document.getElementById('save-report-btn');
+    
     if (currentReport.clients.length > 0) {
-        document.getElementById('total-hours-preview').classList.remove('hidden');
-        document.getElementById('save-report-btn').classList.remove('hidden');
+        totalHoursPreview.classList.remove('hidden');
+        
+        // Update save button based on status
+        if (isInPreviewMode) {
+            saveButton.textContent = 'Modifica Rapporto';
+            saveButton.classList.remove('btn-success');
+            saveButton.classList.add('btn-primary');
+            saveButton.classList.remove('hidden');
+        } else {
+            saveButton.textContent = 'Salva Rapportino Giornaliero';
+            saveButton.classList.add('btn-success');
+            saveButton.classList.remove('btn-primary');
+            saveButton.classList.remove('hidden');
+        }
     } else {
-        document.getElementById('total-hours-preview').classList.add('hidden');
-        document.getElementById('save-report-btn').classList.add('hidden');
+        totalHoursPreview.classList.add('hidden');
+        saveButton.classList.add('hidden');
     }
 }
 
 // Create client section element
-function createClientElement(client, clientIndex) {
+function createClientElement(client, clientIndex, isPreviewMode = false) {
     const div = document.createElement('div');
     div.className = `client-section ${client.colorClass}`;
+    
+    // In preview mode, don't show delete button or add activity buttons
+    const deleteButtonHtml = !isPreviewMode 
+        ? `<button class="icon-btn delete-client-btn" data-index="${clientIndex}" title="Elimina cliente">🗑️</button>` 
+        : '';
+    
+    const activityButtonsHtml = !isPreviewMode 
+        ? `<div class="activity-buttons">
+            <button class="btn btn-secondary btn-small add-machine-btn" data-index="${clientIndex}">+ Aggiungi Macchina</button>
+            <button class="btn btn-secondary btn-small add-material-btn" data-index="${clientIndex}">+ Aggiungi Materiale</button>
+        </div>` 
+        : '';
     
     div.innerHTML = `
         <div class="client-header">
@@ -208,14 +266,11 @@ function createClientElement(client, clientIndex) {
                 <p>${escapeHtml(client.jobSite)}</p>
             </div>
             <div class="client-actions">
-                <button class="icon-btn delete-client-btn" data-index="${clientIndex}" title="Elimina cliente">🗑️</button>
+                ${deleteButtonHtml}
             </div>
         </div>
         
-        <div class="activity-buttons">
-            <button class="btn btn-secondary btn-small add-machine-btn" data-index="${clientIndex}">+ Aggiungi Macchina</button>
-            <button class="btn btn-secondary btn-small add-material-btn" data-index="${clientIndex}">+ Aggiungi Materiale</button>
-        </div>
+        ${activityButtonsHtml}
         
         <div class="activities-list" id="activities-${clientIndex}"></div>
     `;
@@ -223,31 +278,42 @@ function createClientElement(client, clientIndex) {
     // Add activities
     const activitiesList = div.querySelector(`#activities-${clientIndex}`);
     client.activities.forEach((activity, actIndex) => {
-        const activityElement = createActivityElement(activity, clientIndex, actIndex);
+        const activityElement = createActivityElement(activity, clientIndex, actIndex, isPreviewMode);
         activitiesList.appendChild(activityElement);
     });
     
-    // Event listeners
-    div.querySelector('.delete-client-btn').addEventListener('click', (e) => {
-        const index = parseInt(e.currentTarget.dataset.index);
-        deleteClient(index);
-    });
-    
-    div.querySelector('.add-machine-btn').addEventListener('click', (e) => {
-        const index = parseInt(e.currentTarget.dataset.index);
-        addMachineActivity(index);
-    });
-    
-    div.querySelector('.add-material-btn').addEventListener('click', (e) => {
-        const index = parseInt(e.currentTarget.dataset.index);
-        addMaterialActivity(index);
-    });
+    // Event listeners (only if not in preview mode)
+    if (!isPreviewMode) {
+        const deleteBtn = div.querySelector('.delete-client-btn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', (e) => {
+                const index = parseInt(e.currentTarget.dataset.index);
+                deleteClient(index);
+            });
+        }
+        
+        const addMachineBtn = div.querySelector('.add-machine-btn');
+        if (addMachineBtn) {
+            addMachineBtn.addEventListener('click', (e) => {
+                const index = parseInt(e.currentTarget.dataset.index);
+                addMachineActivity(index);
+            });
+        }
+        
+        const addMaterialBtn = div.querySelector('.add-material-btn');
+        if (addMaterialBtn) {
+            addMaterialBtn.addEventListener('click', (e) => {
+                const index = parseInt(e.currentTarget.dataset.index);
+                addMaterialActivity(index);
+            });
+        }
+    }
     
     return div;
 }
 
 // Create activity element
-function createActivityElement(activity, clientIndex, actIndex) {
+function createActivityElement(activity, clientIndex, actIndex, isPreviewMode = false) {
     const div = document.createElement('div');
     div.className = 'activity-item';
     
@@ -271,18 +337,27 @@ function createActivityElement(activity, clientIndex, actIndex) {
         `;
     }
     
+    const deleteButtonHtml = !isPreviewMode 
+        ? `<button class="delete-activity-btn" data-client="${clientIndex}" data-activity="${actIndex}">×</button>` 
+        : '';
+    
     div.innerHTML = `
         <div class="activity-info">
             ${detailsHtml}
         </div>
-        <button class="delete-activity-btn" data-client="${clientIndex}" data-activity="${actIndex}">×</button>
+        ${deleteButtonHtml}
     `;
     
-    div.querySelector('.delete-activity-btn').addEventListener('click', (e) => {
-        const cIndex = parseInt(e.currentTarget.dataset.client);
-        const aIndex = parseInt(e.currentTarget.dataset.activity);
-        deleteActivity(cIndex, aIndex);
-    });
+    if (!isPreviewMode) {
+        const deleteBtn = div.querySelector('.delete-activity-btn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', (e) => {
+                const cIndex = parseInt(e.currentTarget.dataset.client);
+                const aIndex = parseInt(e.currentTarget.dataset.activity);
+                deleteActivity(cIndex, aIndex);
+            });
+        }
+    }
     
     return div;
 }
@@ -419,21 +494,43 @@ function finalizeDailyReport() {
     
     showConfirmDialog(
         'Finalizza Rapportino',
-        'Confermi di voler salvare il rapportino giornaliero? Non potrai più modificarlo.',
+        'Confermi di voler salvare il rapportino giornaliero? Passerà in modalità anteprima.',
         () => {
-            currentReport.status = 'finalized';
+            currentReport.status = STATUS_FINAL;
             currentReport.finalizedAt = Date.now();
             currentReport.totalHours = currentReport.getTotalHours();
             
             savedReports.unshift(currentReport);
             saveFinalizedReports();
             
-            // Clear current report
-            localStorage.removeItem(CURRENT_REPORT_KEY);
-            currentReport = null;
+            // Keep current report but in finalized state
+            saveCurrentReport();
             
-            alert('Rapportino salvato con successo!');
-            showScreen('home-screen');
+            alert('Rapportino finalizzato! Ora è in modalità anteprima.');
+            updateDailyReportScreen();
+        }
+    );
+}
+
+// Reopen a finalized report for editing
+function reopenReportForEditing() {
+    showConfirmDialog(
+        'Modifica Rapportino',
+        'Vuoi modificare questo rapporto? Tornerà in modalità bozza.',
+        () => {
+            // Change status back to draft
+            currentReport.status = STATUS_DRAFT;
+            currentReport.finalizedAt = null;
+            
+            // Remove from saved reports
+            savedReports = savedReports.filter(r => r.id !== currentReport.id);
+            saveFinalizedReports();
+            
+            // Save as current draft
+            saveCurrentReport();
+            
+            alert('Rapporto riaperto per modifica');
+            updateDailyReportScreen();
         }
     );
 }
@@ -480,6 +577,7 @@ function createReportCard(report, index) {
         </div>
         <div class="report-actions">
             <button class="btn btn-primary btn-small view-report-btn" data-index="${index}">Visualizza</button>
+            <button class="btn btn-secondary btn-small edit-report-btn" data-index="${index}">Modifica</button>
         </div>
     `;
     
@@ -488,7 +586,38 @@ function createReportCard(report, index) {
         showReportDetail(idx);
     });
     
+    div.querySelector('.edit-report-btn').addEventListener('click', (e) => {
+        const idx = parseInt(e.currentTarget.dataset.index);
+        editReportFromHistory(idx);
+    });
+    
     return div;
+}
+
+// Edit a report from history
+function editReportFromHistory(index) {
+    const report = savedReports[index];
+    
+    showConfirmDialog(
+        'Modifica Rapporto',
+        `Vuoi modificare il rapporto del ${formatDate(report.date)}? Diventerà la bozza corrente.`,
+        () => {
+            // Deep clone the report to avoid reference issues
+            currentReport = JSON.parse(JSON.stringify(report));
+            currentReport.status = STATUS_DRAFT;
+            currentReport.finalizedAt = null;
+            
+            // Remove from saved reports
+            savedReports.splice(index, 1);
+            saveFinalizedReports();
+            
+            // Save as current draft
+            saveCurrentReport();
+            
+            // Navigate to daily report screen
+            showScreen('daily-report-screen');
+        }
+    );
 }
 
 // Show report detail

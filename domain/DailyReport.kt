@@ -24,8 +24,8 @@ data class DailyReport(
     val clients: List<ClientSection> = emptyList(),
     
     /**
-     * Status of the report: "draft" or "finalized"
-     * Draft reports can be edited, finalized reports are locked
+     * Status of the report: "draft" or "final"
+     * Draft reports can be edited, final reports are locked
      */
     val status: String = "draft",
     
@@ -54,5 +54,41 @@ data class DailyReport(
                 .filterIsInstance<MachineActivity>()
                 .sumOf { it.hours }
         }
+    }
+    
+    /**
+     * Check if the report is in draft state
+     */
+    fun isDraft(): Boolean = status == STATUS_DRAFT
+    
+    /**
+     * Check if the report is finalized
+     */
+    fun isFinalized(): Boolean = status == STATUS_FINAL
+    
+    /**
+     * Finalize the report, locking it for editing
+     */
+    fun finalize(): DailyReport {
+        return copy(
+            status = STATUS_FINAL,
+            finalizedAt = System.currentTimeMillis(),
+            totalHours = calculateTotalHours()
+        )
+    }
+    
+    /**
+     * Reopen a finalized report as draft for editing
+     */
+    fun reopenAsDraft(): DailyReport {
+        return copy(
+            status = STATUS_DRAFT,
+            finalizedAt = null
+        )
+    }
+    
+    companion object {
+        const val STATUS_DRAFT = "draft"
+        const val STATUS_FINAL = "final"
     }
 }

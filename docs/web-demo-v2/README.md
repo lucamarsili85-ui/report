@@ -54,16 +54,26 @@ La schermata funziona come un **diario live**:
 - Tutti i clienti visibili in sequenza
 - Ogni cliente mostra anteprima macchine e materiali salvati
 - Le attività possono essere modificate o rimosse prima del salvataggio finale
+- **Salvataggio progressivo**: Ogni modifica viene salvata automaticamente in modalità BOZZA
 
 #### 6. Salvataggio a Fine Giornata
 Solo a fine giornata:
 - Pulsante: "Salva Rapportino Giornaliero"
 
 Questa azione:
-- Blocca il rapporto
+- Cambia lo stato da BOZZA a FINALE
+- Blocca il rapporto in modalità anteprima
 - Calcola il totale ore giornaliero
 - Suddivisione per cliente
 - Riepilogo macchine e materiali
+- Mantiene il rapporto visibile in modalità sola lettura
+
+#### 7. Modalità Anteprima (Rapporto Finale)
+Quando un rapporto è finalizzato:
+- **UI in sola lettura**: Nessun pulsante di modifica/eliminazione visibile
+- **Dashboard nascosta**: Non è possibile aggiungere nuovi clienti
+- **Pulsante "Modifica Rapporto"**: Permette di riaprire il rapporto in modalità BOZZA
+- Ideale per revisione e conferma finale
 
 ## Come Usare
 
@@ -107,11 +117,18 @@ Questa azione:
 7. **Finalizza Giornata**:
    - Tocca "Salva Rapportino Giornaliero"
    - Conferma il salvataggio
-   - Il rapporto viene bloccato e salvato nello storico
+   - Il rapporto passa in modalità FINALE (anteprima sola lettura)
+   - Il rapporto viene salvato nello storico
 
-### Visualizzare i Rapporti
+8. **Modalità Anteprima**:
+   - Dopo la finalizzazione, il rapporto rimane visibile in modalità sola lettura
+   - Tutti i pulsanti di modifica/eliminazione sono nascosti
+   - Il pulsante diventa "Modifica Rapporto" per riaprire come BOZZA se necessario
+
+### Visualizzare e Modificare i Rapporti
 - **Storico**: Visualizza tutti i rapporti finalizzati
-  - Tocca "Visualizza" per vedere i dettagli completi
+  - Tocca "Visualizza" per vedere i dettagli completi in una finestra modale
+  - Tocca "Modifica" per riaprire il rapporto come BOZZA corrente
   - Include data, clienti, ore totali, e tutte le attività
 
 ## Dettagli Tecnici
@@ -149,10 +166,10 @@ Testato in: Chrome, Firefox, Safari, Edge
 {
   id: 1234567890,                  // ID univoco
   date: "2026-01-03",             // Data YYYY-MM-DD
-  status: "draft",                // "draft" o "finalized"
+  status: "draft",                // "draft" o "final" (cambiato da "finalized")
   clients: [/* array ClientSection */],
   createdAt: 1704326400000,
-  finalizedAt: 1704330000000,     // Solo per rapporti finalizzati
+  finalizedAt: 1704330000000,     // Solo per rapporti finali
   totalHours: 16.0                // Calcolato al salvataggio
 }
 ```
@@ -195,8 +212,9 @@ Testato in: Chrome, Firefox, Safari, Edge
 ### Gestione Dati
 - **Bozza corrente**: Salvata in `currentDailyReport` (localStorage)
 - **Rapporti finalizzati**: Salvati in `savedDailyReports` (localStorage)
-- **Salvataggio progressivo**: Ogni modifica viene salvata automaticamente
-- **Finalizzazione**: Blocca il rapporto e lo sposta nello storico
+- **Salvataggio progressivo**: Ogni modifica viene salvata automaticamente in modalità BOZZA
+- **Finalizzazione**: Cambia lo stato a FINALE e mantiene il rapporto visibile in anteprima
+- **Riapertura per modifica**: I rapporti finali possono essere riaperti come BOZZA dallo storico
 
 ## Differenze dalle Versioni Precedenti
 
@@ -219,8 +237,11 @@ Testato in: Chrome, Firefox, Safari, Edge
 - ✅ **Toggle unità m³/ton**: Selezione rapida tramite confirm
 - ✅ **Anteprima ore totali**: Calcolo automatico in tempo reale
 - ✅ **Diario progressivo live**: Vedi tutto prima del salvataggio
-- ✅ **Modifica prima del salvataggio**: Rimuovi attività/clienti
-- ✅ **Storico rapporti**: Visualizza rapporti finalizzati
+- ✅ **Modifica prima del salvataggio**: Rimuovi attività/clienti in modalità BOZZA
+- ✅ **Modalità BOZZA/FINALE**: Gestione stato con UI distinte
+- ✅ **Modalità anteprima**: UI sola lettura per rapporti finali
+- ✅ **Riapertura per modifica**: Rapporti finali possono tornare in BOZZA
+- ✅ **Storico rapporti**: Visualizza e modifica rapporti finalizzati
 - ✅ **Persistenza localStorage**: Dati salvati localmente
 - ✅ **Conferme obbligatorie**: Dialogo per eliminazioni e salvataggio
 
@@ -248,7 +269,6 @@ Questo design implementa esattamente i requisiti specificati:
 - Nessuna funzionalità export PDF
 - Nessuna integrazione API backend
 - Limitato alla capacità localStorage del browser (~5-10MB)
-- Modifica rapporti finalizzati non disponibile (come da requisiti)
 
 ## Prossimi Sviluppi (Fuori Scope)
 - Vista calendario mensile

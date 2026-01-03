@@ -23,8 +23,12 @@ import java.util.*
 /**
  * Screen for creating or editing a work report.
  * 
- * Provides a form with fields for date, job site, machine, hours worked, and notes.
+ * Provides a form with fields for date, job site, machine, hours worked, notes, and materials.
  * Validates input and saves the report to the database.
+ * 
+ * NOTE: This sample demonstrates materials tracking UI. The materials data is collected
+ * and managed in the UI state but not yet persisted. To complete the implementation,
+ * update the ViewModel, Repository, and Room entity to handle materials persistence.
  * 
  * @param viewModel The WorkReportViewModel for managing data
  * @param onNavigateBack Callback to navigate back to the previous screen
@@ -349,15 +353,20 @@ fun NewReportScreen(
                         val validation = validateInput(trimmedJobSite, trimmedMachine, trimmedHours)
                         if (validation.isValid) {
                             // Safe to use toDouble() here as validation confirmed it's valid
-                            // Note: In full implementation, update viewModel.insertReport to accept materials parameter
-                            // Example: viewModel.insertReport(date, jobSite, machine, hoursWorked, notes, materials)
+                            
+                            // TODO: This is a UI sample demonstrating materials management.
+                            // In a full implementation:
+                            // 1. Update WorkReportViewModel.insertReport signature to accept materials parameter
+                            // 2. Update WorkReportRepository to handle materials persistence
+                            // 3. Update Room entity to store materials (convert List<Material> to JSON or separate table)
+                            // Example call: viewModel.insertReport(date, jobSite, machine, hoursWorked, notes, materials)
+                            
                             viewModel.insertReport(
                                 date = date,
                                 jobSite = trimmedJobSite,
                                 machine = trimmedMachine,
                                 hoursWorked = trimmedHours.toDouble(),
                                 notes = notes.trim()
-                                // materials = materials  // Add this parameter when ViewModel is updated
                             )
                             onNavigateBack()
                         } else {

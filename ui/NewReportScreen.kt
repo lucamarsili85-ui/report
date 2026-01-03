@@ -169,14 +169,20 @@ fun NewReportScreen(
                 // Save button
                 Button(
                     onClick = {
+                        // Trim values before validation
+                        val trimmedJobSite = jobSite.trim()
+                        val trimmedMachine = machine.trim()
+                        val trimmedHours = hoursWorked.trim()
+                        
                         // Validate input
-                        val validation = validateInput(jobSite, machine, hoursWorked)
+                        val validation = validateInput(trimmedJobSite, trimmedMachine, trimmedHours)
                         if (validation.isValid) {
+                            // Safe to use toDouble() here as validation confirmed it's valid
                             viewModel.insertReport(
                                 date = date,
-                                jobSite = jobSite.trim(),
-                                machine = machine.trim(),
-                                hoursWorked = hoursWorked.toDouble(),
+                                jobSite = trimmedJobSite,
+                                machine = trimmedMachine,
+                                hoursWorked = trimmedHours.toDouble(),
                                 notes = notes.trim()
                             )
                             onNavigateBack()

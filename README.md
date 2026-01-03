@@ -14,10 +14,15 @@ This repository contains the structure and code samples for an Android app built
 
 ```
 /docs
-  └── spec.md                 # Complete app specification with features and data fields
+  ├── spec.md                 # Complete app specification with features and data fields
+  └── pdf_export.md           # PDF export specification and field mappings
+
+/domain
+  ├── Material.kt             # Material domain model for tracking materials used
+  └── WorkReport.kt           # WorkReport domain model with materials support
 
 /app_structure
-  ├── WorkReport.kt           # Room entity for work reports
+  ├── WorkReport.kt           # Room entity for work reports (legacy)
   ├── WorkReportDao.kt        # Data Access Object with database queries
   ├── AppDatabase.kt          # Room database configuration
   ├── WorkReportRepository.kt # Repository layer for data abstraction
@@ -25,7 +30,8 @@ This repository contains the structure and code samples for an Android app built
 
 /ui
   ├── DashboardScreen.kt      # Main screen showing all work reports
-  └── NewReportScreen.kt      # Form for creating/editing reports
+  ├── NewReportScreen.kt      # Form for creating/editing reports with materials
+  └── JobSiteQuickSearch.kt   # Quick search UI for filtering job sites
 ```
 
 ## Architecture
@@ -70,10 +76,13 @@ UI (Compose) → ViewModel → Repository → DAO → Room Database
 
 - ✅ **Dashboard** - View all work reports with summary
 - ✅ **Create/Edit Reports** - Form with date, job site, machine, hours, notes
+- ✅ **Materials Tracking** - Add and manage multiple materials per report with quantities and units
+- ✅ **Job Site Quick Search** - Filter and quickly find job sites
 - ✅ **Data Validation** - Input validation for all fields
 - ✅ **Persistence** - Local storage using Room database
 - ✅ **Reactive UI** - Auto-updates using Kotlin Flow
 - ✅ **Material Design 3** - Modern UI components
+- ✅ **PDF Export Ready** - Specification for exporting reports to PDF format
 
 ## Technology Stack
 
@@ -202,8 +211,8 @@ class MainActivity : ComponentActivity() {
 - [ ] Implement Material3 DatePicker for date selection
 - [ ] Add edit functionality for existing reports
 - [ ] Implement swipe-to-delete on dashboard
-- [ ] Add search and filter capabilities
-- [ ] Implement data export (PDF/CSV)
+- [x] Add search and filter capabilities (JobSiteQuickSearch sample provided)
+- [x] Implement data export specification (PDF export spec in docs/pdf_export.md)
 - [ ] Add photo attachments
 - [ ] Cloud sync with Firebase/backend API
 - [ ] Add Hilt for dependency injection
@@ -219,6 +228,13 @@ See `/docs/spec.md` for complete specification including:
 - Data field definitions
 - Validation rules
 - Technical architecture details
+
+See `/docs/pdf_export.md` for PDF export specification including:
+- PDF layout and structure
+- Field mappings from domain models
+- Styling guidelines
+- Generation flow and implementation steps
+- Materials table formatting
 
 ## Development Notes
 

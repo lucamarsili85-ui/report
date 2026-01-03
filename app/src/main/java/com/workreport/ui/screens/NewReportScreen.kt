@@ -117,7 +117,10 @@ fun NewReportScreen(
                     onNavigateBack()
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = jobSite.isNotEmpty() && machine.isNotEmpty() && workedHours.isNotEmpty()
+                enabled = jobSite.isNotEmpty() && 
+                         machine.isNotEmpty() && 
+                         workedHours.toFloatOrNull() != null && 
+                         workedHours.toFloatOrNull()!! > 0f
             ) {
                 Text(stringResource(R.string.save_report))
             }

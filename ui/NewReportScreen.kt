@@ -293,7 +293,7 @@ fun NewReportScreen(
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                                 )
-                                if (material.note.isNotEmpty()) {
+                                if (material.note.isNotBlank()) {
                                     Text(
                                         text = material.note,
                                         style = MaterialTheme.typography.bodySmall,

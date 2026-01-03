@@ -49,6 +49,10 @@ data class WorkReport(
     
     /**
      * List of materials used during the work
+     * 
+     * This is an immutable list. In practice, materials are managed through UI state
+     * and a new WorkReport instance is created when materials are modified.
+     * Default: empty list
      */
     val materials: List<Material> = emptyList()
 )

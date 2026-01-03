@@ -48,6 +48,41 @@
         </div>
     </div>
 
+    <!-- Entry Type Selection Modal -->
+    <div id="entry-type-modal" class="modal hidden">
+        <div class="modal-content entry-type-picker">
+            <h2>Seleziona tipo di voce</h2>
+            <div class="entry-type-buttons">
+                <button class="entry-type-btn" onclick="selectEntryType('activity')">
+                    <span class="entry-icon">⚙️</span>
+                    <span class="entry-label">Attività</span>
+                </button>
+                <button class="entry-type-btn" onclick="selectEntryType('material')">
+                    <span class="entry-icon">📦</span>
+                    <span class="entry-label">Materiale</span>
+                </button>
+                <button class="entry-type-btn" onclick="selectEntryType('vehicleMovement')">
+                    <span class="entry-icon">🚚</span>
+                    <span class="entry-label">Movimento Veicolo</span>
+                </button>
+            </div>
+            <button class="btn btn-secondary btn-full" onclick="hideEntryTypeModal()">Annulla</button>
+        </div>
+    </div>
+
+    <!-- Report View Modal -->
+    <div id="report-view-modal" class="modal hidden">
+        <div class="modal-content report-view">
+            <div class="modal-header">
+                <h2>Dettagli Rapporto</h2>
+                <button class="close-btn" onclick="hideReportModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="report-modal-content">
+                <!-- Report details will be rendered here -->
+            </div>
+        </div>
+    </div>
+
     <!-- Main App Container -->
     <div id="app" class="app-container">
         <!-- Header Bar with accent strip -->
@@ -84,83 +119,33 @@
                 </div>
             </section>
 
-            <!-- Nuovo Screen -->
+            <!-- Nuovo Screen (Daily Diary) -->
             <section id="nuovo-screen" class="screen">
-                <form id="report-form" class="report-form">
-                    <!-- Step 1: Cantiere -->
-                    <div class="form-step">
-                        <div class="step-header">
-                            <span class="step-number">1</span>
-                            <h3>Cantiere</h3>
-                        </div>
-                        <div class="form-field">
-                            <label for="report-date">Data *</label>
-                            <input type="date" id="report-date" required class="input-large">
-                        </div>
-                        <div class="form-field">
-                            <label for="job-site">Cantiere *</label>
-                            <input type="text" id="job-site" required class="input-large" autocomplete="off" placeholder="Inizia a digitare...">
-                            <div id="job-site-suggestions" class="suggestions"></div>
+                <div class="daily-diary-container">
+                    <!-- Current Date and Summary -->
+                    <div class="day-header">
+                        <h2 id="current-date-display">Oggi</h2>
+                        <div class="day-stats">
+                            <span class="stat-label">Ore totali:</span>
+                            <span class="stat-value" id="total-hours-display">0.0</span>
                         </div>
                     </div>
 
-                    <!-- Step 2: Lavoro -->
-                    <div class="form-step">
-                        <div class="step-header">
-                            <span class="step-number">2</span>
-                            <h3>Lavoro</h3>
-                        </div>
-                        <div class="form-field">
-                            <label for="machine">Macchina *</label>
-                            <input type="text" id="machine" required class="input-large" placeholder="es. Escavatore, Bulldozer">
-                        </div>
-                        <div class="form-field">
-                            <label for="hours">Ore lavorate *</label>
-                            <div class="hours-input-group">
-                                <button type="button" class="hours-btn" id="hours-minus" aria-label="Diminuisci ore">−</button>
-                                <input type="number" id="hours" step="0.5" min="0.5" max="24" required class="hours-input" value="8.0">
-                                <button type="button" class="hours-btn" id="hours-plus" aria-label="Aumenta ore">+</button>
-                            </div>
-                        </div>
+                    <!-- Daily Preview -->
+                    <div id="daily-preview" class="daily-preview">
+                        <!-- Client sections will be rendered here -->
                     </div>
 
-                    <!-- Step 3: Materiali -->
-                    <div class="form-step" id="materials-step">
-                        <div class="step-header">
-                            <span class="step-number">3</span>
-                            <h3>Materiali</h3>
-                        </div>
-                        
-                        <!-- Toggle button for Operatore role -->
-                        <button type="button" id="toggle-materials-btn" class="btn btn-secondary hidden">
-                            Aggiungi materiali (opzionale)
+                    <!-- Actions -->
+                    <div class="day-actions">
+                        <button id="add-client-btn" class="btn btn-secondary btn-full">
+                            + Aggiungi Cliente
                         </button>
-
-                        <div id="materials-container" class="materials-container">
-                            <div id="materials-list" class="materials-list">
-                                <!-- Material rows will be added here -->
-                            </div>
-                            <button type="button" id="add-material-btn" class="btn btn-secondary btn-full">+ Aggiungi materiale</button>
-                        </div>
+                        <button id="finalize-day-btn" class="btn btn-primary btn-full">
+                            Finalizza Giornata
+                        </button>
                     </div>
-
-                    <!-- Step 4: Note -->
-                    <div class="form-step">
-                        <div class="step-header">
-                            <span class="step-number">4</span>
-                            <h3>Note</h3>
-                        </div>
-                        <div class="form-field">
-                            <label for="notes">Note (opzionale)</label>
-                            <textarea id="notes" rows="4" class="input-large" placeholder="Note facoltative sul lavoro..."></textarea>
-                        </div>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary btn-large">Salva rapporto</button>
-                        <button type="button" id="cancel-btn" class="btn btn-secondary btn-large">Annulla</button>
-                    </div>
-                </form>
+                </div>
             </section>
 
             <!-- Archivio Screen -->
@@ -176,12 +161,8 @@
                         <input type="date" id="filter-date-to" class="input-large">
                     </div>
                     <div class="filter-field">
-                        <label for="filter-job-site">Cantiere</label>
-                        <input type="text" id="filter-job-site" class="input-large" placeholder="Tutti i cantieri">
-                    </div>
-                    <div class="filter-field">
-                        <label for="filter-machine">Macchina</label>
-                        <input type="text" id="filter-machine" class="input-large" placeholder="Tutte le macchine">
+                        <label for="filter-client">Cliente/Cantiere</label>
+                        <input type="text" id="filter-client" class="input-large" placeholder="Nome cliente o cantiere">
                     </div>
                     <div class="filter-actions">
                         <button id="apply-filters-btn" class="btn btn-primary btn-large">Applica filtri</button>

@@ -325,7 +325,6 @@ function clearAllData() {
         saveDraftDaysToStorage();
         saveSavedReportsToStorage();
         updateDashboard();
-        renderRecentReports();
         renderArchiveReports();
         closeSettings();
         alert('Tutti i dati sono stati eliminati.');
@@ -621,7 +620,7 @@ function renderEntriesView(entries) {
                 </div>
             `;
         } else if (entry.type === 'material') {
-            const unit = entry.data.unit === 'mc' || entry.data.unit === 'metric' ? 'm³' : 'ton';
+            const unit = getDisplayUnit(entry.data.unit);
             return `
                 <div class="entry-view material">
                     <strong>Materiale</strong>
@@ -772,6 +771,7 @@ function renderEntryForm(clientId, entry) {
             </div>
         `;
     } else if (entry.type === 'material') {
+        const normalizedUnit = normalizeUnit(entry.data.unit);
         return `
             <div class="entry-form material" data-entry-id="${entry.id}">
                 <div class="entry-header">
@@ -787,10 +787,10 @@ function renderEntryForm(clientId, entry) {
                            placeholder="Quantità" onchange="updateEntryData(${clientId}, ${entry.id}, 'quantity', parseFloat(this.value))">
                     <div class="unit-toggle">
                         <label><input type="radio" name="unit-${entry.id}" value="mc" 
-                                ${entry.data.unit === 'mc' || entry.data.unit === 'metric' ? 'checked' : ''} 
+                                ${normalizedUnit === 'mc' ? 'checked' : ''} 
                                 onchange="updateEntryData(${clientId}, ${entry.id}, 'unit', this.value)"> m³</label>
                         <label><input type="radio" name="unit-${entry.id}" value="ton" 
-                                ${entry.data.unit === 'ton' ? 'checked' : ''} 
+                                ${normalizedUnit === 'ton' ? 'checked' : ''} 
                                 onchange="updateEntryData(${clientId}, ${entry.id}, 'unit', this.value)"> ton</label>
                     </div>
                     <input type="text" class="input-entry" data-field="fromLocation" 
@@ -903,6 +903,16 @@ function clearFilters() {
     document.getElementById('filter-date-to').value = '';
     document.getElementById('filter-client').value = '';
     renderArchiveReports();
+}
+
+// Utility function to get display unit for material
+function getDisplayUnit(unit) {
+    return (unit === 'mc' || unit === 'metric') ? 'm³' : 'ton';
+}
+
+// Utility function to normalize material unit (backward compatibility)
+function normalizeUnit(unit) {
+    return (unit === 'metric') ? 'mc' : unit;
 }
 
 // Utility function to escape HTML

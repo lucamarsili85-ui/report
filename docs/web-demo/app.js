@@ -1,16 +1,63 @@
 // Storage keys
-const STORAGE_KEY = 'dailyWorkReports';
+const DRAFT_DAYS_KEY = 'draftDays';
+const SAVED_REPORTS_KEY = 'savedReports';
 const ROLE_KEY = 'userRole';
 
 // Application state
-let reports = [];
+let draftDays = []; // Array of DraftDay objects
+let savedReports = []; // Array of finalized reports
+let currentDraftDay = null; // Currently selected DraftDay
 let userRole = null;
-let materialCounter = 0;
+let entryCounter = 0;
+let clientCounter = 0;
 let currentScreen = 'dashboard';
+
+// Data Models
+class DraftDay {
+    constructor(date, role) {
+        this.id = Date.now() + Math.random();
+        this.date = date; // Date string YYYY-MM-DD
+        this.role = role;
+        this.status = 'draft'; // 'draft' or 'closed'
+        this.clients = []; // Array of ClientSection objects
+        this.createdAt = Date.now();
+    }
+    
+    getTotalHours() {
+        let total = 0;
+        this.clients.forEach(client => {
+            client.entries.forEach(entry => {
+                if (entry.type === 'activity' && entry.data.hours) {
+                    total += parseFloat(entry.data.hours);
+                }
+            });
+        });
+        return total;
+    }
+}
+
+class ClientSection {
+    constructor() {
+        this.id = Date.now() + Math.random();
+        this.clientName = '';
+        this.jobSiteName = '';
+        this.jobSiteLocation = '';
+        this.entries = []; // Array of Entry objects
+    }
+}
+
+class Entry {
+    constructor(type) {
+        this.id = Date.now() + Math.random();
+        this.type = type; // 'activity', 'material', 'vehicleMovement'
+        this.data = {};
+        this.createdAt = Date.now();
+    }
+}
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', () => {
-    loadReportsFromStorage();
+    loadDataFromStorage();
     loadUserRole();
     
     if (!userRole) {
@@ -55,46 +102,106 @@ function showRolePicker() {
 // Initialize app after role is set
 function initializeApp() {
     setupEventListeners();
-    updateMaterialsVisibility();
+    setDefaultDate();
+    loadOrCreateTodayDraft();
     updateDashboard();
     renderRecentReports();
     renderArchiveReports();
-    setDefaultDate();
     switchScreen('dashboard');
 }
 
 // LocalStorage operations
-function loadReportsFromStorage() {
+function loadDataFromStorage() {
     try {
-        const data = localStorage.getItem(STORAGE_KEY);
-        if (data) {
-            const parsed = JSON.parse(data);
-            if (Array.isArray(parsed)) {
-                reports = parsed.map(report => ({
-                    id: report.id || Date.now(),
-                    date: report.date || Date.now(),
-                    jobSite: report.jobSite || '',
-                    machine: report.machine || '',
-                    hoursWorked: parseFloat(report.hoursWorked) || 0,
-                    notes: report.notes || '',
-                    materials: Array.isArray(report.materials) ? report.materials : [],
-                    createdAt: report.createdAt || Date.now()
-                }));
-            }
+        const draftData = localStorage.getItem(DRAFT_DAYS_KEY);
+        if (draftData) {
+            draftDays = JSON.parse(draftData);
+        }
+        
+        const savedData = localStorage.getItem(SAVED_REPORTS_KEY);
+        if (savedData) {
+            savedReports = JSON.parse(savedData);
         }
     } catch (error) {
-        console.error('Error loading reports from storage:', error);
-        reports = [];
+        console.error('Error loading data from storage:', error);
+        draftDays = [];
+        savedReports = [];
     }
 }
 
-function saveReportsToStorage() {
+function saveDraftDaysToStorage() {
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
+        localStorage.setItem(DRAFT_DAYS_KEY, JSON.stringify(draftDays));
+    } catch (error) {
+        console.error('Error saving draft days to storage:', error);
+        alert('Impossibile salvare i dati. Lo storage potrebbe essere pieno.');
+    }
+}
+
+function saveSavedReportsToStorage() {
+    try {
+        localStorage.setItem(SAVED_REPORTS_KEY, JSON.stringify(savedReports));
     } catch (error) {
         console.error('Error saving reports to storage:', error);
         alert('Impossibile salvare i dati. Lo storage potrebbe essere pieno.');
     }
+}
+
+// Draft Day Management
+function loadOrCreateTodayDraft() {
+    const today = new Date().toISOString().split('T')[0];
+    let draft = draftDays.find(d => d.date === today && d.status === 'draft');
+    
+    if (!draft) {
+        draft = new DraftDay(today, userRole);
+        draftDays.push(draft);
+        saveDraftDaysToStorage();
+    }
+    
+    currentDraftDay = draft;
+    renderDailyPreview();
+}
+
+function getDraftDayByDate(date) {
+    return draftDays.find(d => d.date === date);
+}
+
+function finalizeDraftDay() {
+    if (!currentDraftDay) return;
+    
+    if (currentDraftDay.clients.length === 0) {
+        alert('Aggiungi almeno un cliente prima di finalizzare il giorno.');
+        return;
+    }
+    
+    if (!confirm('Sei sicuro di voler finalizzare questo giorno? Non potrai più modificarlo.')) {
+        return;
+    }
+    
+    currentDraftDay.status = 'closed';
+    
+    // Create saved report from draft day
+    const report = {
+        id: currentDraftDay.id,
+        date: currentDraftDay.date,
+        role: currentDraftDay.role,
+        clients: currentDraftDay.clients,
+        totalHours: currentDraftDay.getTotalHours(),
+        createdAt: currentDraftDay.createdAt,
+        finalizedAt: Date.now()
+    };
+    
+    savedReports.push(report);
+    saveDraftDaysToStorage();
+    saveSavedReportsToStorage();
+    
+    alert('Giorno finalizzato con successo!');
+    
+    // Load next day or create new
+    loadOrCreateTodayDraft();
+    updateDashboard();
+    renderRecentReports();
+    switchScreen('dashboard');
 }
 
 // Event listeners setup
@@ -108,33 +215,32 @@ function setupEventListeners() {
     });
 
     // Settings
-    document.getElementById('open-settings').addEventListener('click', openSettings);
-    document.getElementById('close-settings').addEventListener('click', closeSettings);
-    document.getElementById('change-role-btn').addEventListener('click', changeRole);
-    document.getElementById('clear-data-btn').addEventListener('click', clearAllData);
+    const openSettingsBtn = document.getElementById('open-settings');
+    if (openSettingsBtn) openSettingsBtn.addEventListener('click', openSettings);
+    
+    const closeSettingsBtn = document.getElementById('close-settings');
+    if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', closeSettings);
+    
+    const changeRoleBtn = document.getElementById('change-role-btn');
+    if (changeRoleBtn) changeRoleBtn.addEventListener('click', changeRole);
+    
+    const clearDataBtn = document.getElementById('clear-data-btn');
+    if (clearDataBtn) clearDataBtn.addEventListener('click', clearAllData);
 
-    // Report form
-    document.getElementById('report-form').addEventListener('submit', handleReportSubmit);
-    document.getElementById('cancel-btn').addEventListener('click', resetReportForm);
-
-    // Hours buttons
-    document.getElementById('hours-minus').addEventListener('click', () => adjustHours(-0.5));
-    document.getElementById('hours-plus').addEventListener('click', () => adjustHours(0.5));
-
-    // Materials
-    document.getElementById('add-material-btn').addEventListener('click', addMaterialRow);
-    document.getElementById('toggle-materials-btn').addEventListener('click', toggleMaterials);
-
-    // Job site autocomplete
-    const jobSiteInput = document.getElementById('job-site');
-    jobSiteInput.addEventListener('input', handleJobSiteInput);
-    jobSiteInput.addEventListener('blur', () => {
-        setTimeout(() => hideSuggestions(), 200);
-    });
-
+    // Client management
+    const addClientBtn = document.getElementById('add-client-btn');
+    if (addClientBtn) addClientBtn.addEventListener('click', addNewClient);
+    
+    // Finalize day
+    const finalizeDayBtn = document.getElementById('finalize-day-btn');
+    if (finalizeDayBtn) finalizeDayBtn.addEventListener('click', finalizeDraftDay);
+    
     // Archive filters
-    document.getElementById('apply-filters-btn').addEventListener('click', applyFilters);
-    document.getElementById('clear-filters-btn').addEventListener('click', clearFilters);
+    const applyFiltersBtn = document.getElementById('apply-filters-btn');
+    if (applyFiltersBtn) applyFiltersBtn.addEventListener('click', applyFilters);
+    
+    const clearFiltersBtn = document.getElementById('clear-filters-btn');
+    if (clearFiltersBtn) clearFiltersBtn.addEventListener('click', clearFilters);
 }
 
 // Screen switching
@@ -164,7 +270,7 @@ function switchScreen(screenName) {
     // Update header
     const titles = {
         'dashboard': 'Dashboard',
-        'nuovo': 'Nuovo Rapporto',
+        'nuovo': 'Giornata di lavoro',
         'archivio': 'Archivio'
     };
     document.getElementById('screen-title').textContent = titles[screenName];
@@ -177,6 +283,8 @@ function switchScreen(screenName) {
     if (screenName === 'dashboard') {
         updateDashboard();
         renderRecentReports();
+    } else if (screenName === 'nuovo') {
+        renderDailyPreview();
     } else if (screenName === 'archivio') {
         renderArchiveReports();
     }
@@ -203,58 +311,119 @@ function changeRole() {
 }
 
 function clearAllData() {
-    if (confirm('Sei sicuro di voler eliminare tutti i rapporti? Questa operazione non può essere annullata.')) {
-        reports = [];
-        saveReportsToStorage();
+    if (confirm('Sei sicuro di voler eliminare tutti i dati? Questa operazione non può essere annullata.')) {
+        draftDays = [];
+        savedReports = [];
+        currentDraftDay = null;
+        saveDraftDaysToStorage();
+        saveSavedReportsToStorage();
         updateDashboard();
         renderRecentReports();
         renderArchiveReports();
         closeSettings();
         alert('Tutti i dati sono stati eliminati.');
-    }
-}
-
-// Materials visibility based on role
-function updateMaterialsVisibility() {
-    const toggleBtn = document.getElementById('toggle-materials-btn');
-    const container = document.getElementById('materials-container');
-    
-    if (userRole === 'operatore') {
-        // For Operatore: materials collapsed by default
-        toggleBtn.classList.remove('hidden');
-        container.classList.add('hidden');
-    } else {
-        // For Autista: materials visible by default
-        toggleBtn.classList.add('hidden');
-        container.classList.remove('hidden');
-    }
-}
-
-function toggleMaterials() {
-    const container = document.getElementById('materials-container');
-    const toggleBtn = document.getElementById('toggle-materials-btn');
-    
-    if (container.classList.contains('hidden')) {
-        container.classList.remove('hidden');
-        toggleBtn.textContent = 'Nascondi materiali';
-    } else {
-        container.classList.add('hidden');
-        toggleBtn.textContent = 'Aggiungi materiali (opzionale)';
+        loadOrCreateTodayDraft();
     }
 }
 
 // Set default date
 function setDefaultDate() {
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('report-date').value = today;
+    const dateInput = document.getElementById('draft-date');
+    if (dateInput) {
+        dateInput.value = today;
+    }
 }
 
-// Hours adjustment
-function adjustHours(delta) {
-    const input = document.getElementById('hours');
-    let value = parseFloat(input.value) || 0;
-    value = Math.max(0.5, Math.min(24, value + delta));
-    input.value = value.toFixed(1);
+// Client Management
+function addNewClient() {
+    if (!currentDraftDay) {
+        loadOrCreateTodayDraft();
+    }
+    
+    const client = new ClientSection();
+    currentDraftDay.clients.push(client);
+    saveDraftDaysToStorage();
+    renderDailyPreview();
+}
+
+function removeClient(clientId) {
+    if (!confirm('Sei sicuro di voler rimuovere questo cliente?')) {
+        return;
+    }
+    
+    currentDraftDay.clients = currentDraftDay.clients.filter(c => c.id !== clientId);
+    saveDraftDaysToStorage();
+    renderDailyPreview();
+}
+
+function updateClientInfo(clientId, field, value) {
+    const client = currentDraftDay.clients.find(c => c.id === clientId);
+    if (client) {
+        client[field] = value;
+        saveDraftDaysToStorage();
+    }
+}
+
+// Entry Management
+function showEntryTypeModal() {
+    const modal = document.getElementById('entry-type-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
+}
+
+function hideEntryTypeModal() {
+    const modal = document.getElementById('entry-type-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function addEntry(clientId, type) {
+    const client = currentDraftDay.clients.find(c => c.id === clientId);
+    if (!client) return;
+    
+    const entry = new Entry(type);
+    
+    // Initialize entry data based on type
+    if (type === 'activity') {
+        entry.data = { machine: '', hours: 8.0, notes: '' };
+    } else if (type === 'material') {
+        entry.data = { name: '', quantity: 0, unit: 'metric', fromLocation: '', toLocation: '' };
+    } else if (type === 'vehicleMovement') {
+        entry.data = { vehicle: '', transportMethod: '', fromLocation: '', toLocation: '', notes: '' };
+    }
+    
+    client.entries.push(entry);
+    saveDraftDaysToStorage();
+    renderDailyPreview();
+    hideEntryTypeModal();
+}
+
+function removeEntry(clientId, entryId) {
+    if (!confirm('Sei sicuro di voler rimuovere questa voce?')) {
+        return;
+    }
+    
+    const client = currentDraftDay.clients.find(c => c.id === clientId);
+    if (client) {
+        client.entries = client.entries.filter(e => e.id !== entryId);
+        saveDraftDaysToStorage();
+        renderDailyPreview();
+    }
+}
+
+function updateEntryData(clientId, entryId, field, value) {
+    const client = currentDraftDay.clients.find(c => c.id === clientId);
+    if (client) {
+        const entry = client.entries.find(e => e.id === entryId);
+        if (entry) {
+            entry.data[field] = value;
+            saveDraftDaysToStorage();
+            renderDailyPreview();
+        }
+    }
 }
 
 // Dashboard calculations
@@ -271,42 +440,72 @@ function calculateWeeklyHours() {
     const weekStart = new Date(now);
     weekStart.setDate(now.getDate() - now.getDay());
     weekStart.setHours(0, 0, 0, 0);
+    const weekStartStr = weekStart.toISOString().split('T')[0];
 
-    return reports
-        .filter(report => new Date(report.date) >= weekStart)
-        .reduce((sum, report) => sum + report.hoursWorked, 0);
+    let total = 0;
+    
+    // From saved reports
+    savedReports.forEach(report => {
+        if (report.date >= weekStartStr) {
+            total += report.totalHours || 0;
+        }
+    });
+    
+    // From draft days
+    draftDays.forEach(draft => {
+        if (draft.date >= weekStartStr && draft.status === 'draft') {
+            total += draft.getTotalHours();
+        }
+    });
+
+    return total;
 }
 
 function calculateMonthlyHours() {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthStartStr = monthStart.toISOString().split('T')[0];
 
-    return reports
-        .filter(report => new Date(report.date) >= monthStart)
-        .reduce((sum, report) => sum + report.hoursWorked, 0);
+    let total = 0;
+    
+    // From saved reports
+    savedReports.forEach(report => {
+        if (report.date >= monthStartStr) {
+            total += report.totalHours || 0;
+        }
+    });
+    
+    // From draft days
+    draftDays.forEach(draft => {
+        if (draft.date >= monthStartStr && draft.status === 'draft') {
+            total += draft.getTotalHours();
+        }
+    });
+
+    return total;
 }
 
 // Recent reports rendering
 function renderRecentReports() {
     const container = document.getElementById('recent-reports');
-    const recentReports = [...reports]
-        .sort((a, b) => b.createdAt - a.createdAt)
+    const recentReports = [...savedReports]
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
         .slice(0, 5);
 
     if (recentReports.length === 0) {
-        container.innerHTML = '<p class="empty-state">Nessun rapporto. Crea il tuo primo rapporto!</p>';
+        container.innerHTML = '<p class="empty-state">Nessun rapporto finalizzato. Lavora sulla tua giornata!</p>';
         return;
     }
 
     container.innerHTML = recentReports.map(report => createReportCard(report)).join('');
     
-    attachDeleteListeners(container);
+    attachReportViewListeners(container);
 }
 
 // Archive reports rendering
 function renderArchiveReports(filteredReports = null) {
     const container = document.getElementById('archive-reports');
-    const reportsToShow = filteredReports || [...reports].sort((a, b) => b.date - a.date);
+    const reportsToShow = filteredReports || [...savedReports].sort((a, b) => new Date(b.date) - new Date(a.date));
 
     if (reportsToShow.length === 0) {
         container.innerHTML = '<p class="empty-state">Nessun rapporto trovato.</p>';
@@ -315,12 +514,12 @@ function renderArchiveReports(filteredReports = null) {
 
     container.innerHTML = reportsToShow.map(report => createReportCard(report)).join('');
     
-    attachDeleteListeners(container);
+    attachReportViewListeners(container);
 }
 
 // Create report card HTML
 function createReportCard(report) {
-    const date = new Date(report.date);
+    const date = new Date(report.date + 'T00:00:00');
     const formattedDate = date.toLocaleDateString('it-IT', { 
         weekday: 'short', 
         year: 'numeric', 
@@ -328,231 +527,364 @@ function createReportCard(report) {
         day: 'numeric' 
     });
 
-    const materialsCount = report.materials && report.materials.length > 0
-        ? `<span class="materials-count">${report.materials.length} materiale${report.materials.length > 1 ? 'i' : ''}</span>`
-        : '';
-
-    const notesHtml = report.notes
-        ? `<div class="report-notes">${escapeHtml(report.notes)}</div>`
-        : '';
+    const clientsCount = report.clients ? report.clients.length : 0;
+    const totalHours = report.totalHours || 0;
 
     return `
         <div class="report-card">
             <div class="report-header">
                 <div class="report-date">${formattedDate}</div>
-                <div class="report-hours">${report.hoursWorked} ore</div>
+                <div class="report-hours">${totalHours.toFixed(1)} ore</div>
             </div>
             <div class="report-details">
                 <div class="report-detail">
-                    <strong>Cantiere:</strong>
-                    ${escapeHtml(report.jobSite)}
+                    <strong>Clienti:</strong>
+                    ${clientsCount} cliente${clientsCount !== 1 ? 'i' : ''}
                 </div>
                 <div class="report-detail">
-                    <strong>Macchina:</strong>
-                    ${escapeHtml(report.machine)} ${materialsCount}
+                    <strong>Ruolo:</strong>
+                    ${escapeHtml(report.role || 'N/A')}
                 </div>
             </div>
-            ${notesHtml}
-            <button class="btn-delete" data-id="${report.id}">Elimina</button>
+            <button class="btn-view" data-id="${report.id}">Visualizza</button>
         </div>
     `;
 }
 
-function attachDeleteListeners(container) {
-    container.querySelectorAll('.btn-delete').forEach(btn => {
+function attachReportViewListeners(container) {
+    container.querySelectorAll('.btn-view').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const id = parseInt(e.target.dataset.id);
-            deleteReport(id);
+            const id = parseFloat(e.target.dataset.id);
+            viewReport(id);
         });
     });
 }
 
-// Job site autocomplete
-function handleJobSiteInput(e) {
-    const input = e.target.value.trim().toLowerCase();
+function viewReport(reportId) {
+    const report = savedReports.find(r => r.id === reportId);
+    if (!report) return;
     
-    if (input.length < 1) {
-        hideSuggestions();
-        return;
-    }
-
-    const jobSites = [...new Set(reports.map(r => r.jobSite))];
-    const matches = jobSites.filter(site => 
-        site.toLowerCase().includes(input)
-    );
-
-    if (matches.length > 0) {
-        showSuggestions(matches);
-    } else {
-        hideSuggestions();
-    }
+    // Show modal with report details
+    showReportModal(report);
 }
 
-function showSuggestions(suggestions) {
-    const container = document.getElementById('job-site-suggestions');
-    container.innerHTML = suggestions
-        .map(site => `<div class="suggestion-item" data-value="${escapeHtml(site)}">${escapeHtml(site)}</div>`)
-        .join('');
+function showReportModal(report) {
+    const modal = document.getElementById('report-view-modal');
+    if (!modal) return;
     
-    container.classList.add('show');
-
-    container.querySelectorAll('.suggestion-item').forEach(item => {
-        item.addEventListener('click', () => {
-            document.getElementById('job-site').value = item.dataset.value;
-            hideSuggestions();
-        });
+    const content = document.getElementById('report-modal-content');
+    const date = new Date(report.date + 'T00:00:00');
+    const formattedDate = date.toLocaleDateString('it-IT', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
     });
-}
-
-function hideSuggestions() {
-    document.getElementById('job-site-suggestions').classList.remove('show');
-}
-
-// Materials management
-function addMaterialRow() {
-    materialCounter++;
-    const container = document.getElementById('materials-list');
-    const row = document.createElement('div');
-    row.className = 'material-row';
-    row.dataset.id = materialCounter;
-    row.innerHTML = `
-        <input type="text" placeholder="Nome materiale" class="material-name">
-        <input type="number" placeholder="Quantità" class="material-quantity" step="0.1" min="0.1">
-        <input type="text" placeholder="Unità (es. m³, kg)" class="material-unit">
-        <input type="text" placeholder="Note (opzionale)" class="material-note">
-        <button type="button" class="btn btn-remove" onclick="removeMaterialRow(${materialCounter})">Rimuovi</button>
+    
+    let html = `
+        <div class="report-view-header">
+            <h2>${formattedDate}</h2>
+            <p><strong>Ruolo:</strong> ${escapeHtml(report.role)}</p>
+            <p><strong>Ore totali:</strong> ${report.totalHours.toFixed(1)}</p>
+        </div>
     `;
-    container.appendChild(row);
-}
-
-function removeMaterialRow(id) {
-    const row = document.querySelector(`.material-row[data-id="${id}"]`);
-    if (row) {
-        row.remove();
-    }
-}
-
-// Form handling
-function handleReportSubmit(e) {
-    e.preventDefault();
-
-    const dateValue = document.getElementById('report-date').value;
-    const jobSite = document.getElementById('job-site').value.trim();
-    const machine = document.getElementById('machine').value.trim();
-    const hours = parseFloat(document.getElementById('hours').value);
-    const notes = document.getElementById('notes').value.trim();
-
-    // Validation
-    if (!dateValue || !jobSite || !machine || !hours) {
-        alert('Compila tutti i campi obbligatori.');
-        return;
-    }
-
-    if (hours <= 0 || hours > 24) {
-        alert('Le ore devono essere tra 0.5 e 24.');
-        return;
-    }
-
-    if (jobSite.length > 100) {
-        alert('Il nome del cantiere deve essere massimo 100 caratteri.');
-        return;
-    }
-
-    if (machine.length > 50) {
-        alert('Il nome della macchina deve essere massimo 50 caratteri.');
-        return;
-    }
-
-    if (notes.length > 500) {
-        alert('Le note devono essere massimo 500 caratteri.');
-        return;
-    }
-
-    // Get materials
-    const materials = [];
-    document.querySelectorAll('.material-row').forEach(row => {
-        const name = row.querySelector('.material-name').value.trim();
-        const quantity = parseFloat(row.querySelector('.material-quantity').value);
-        const unit = row.querySelector('.material-unit').value.trim();
-        const note = row.querySelector('.material-note').value.trim();
-
-        if (name && quantity && unit) {
-            if (quantity <= 0) {
-                alert('La quantità del materiale deve essere maggiore di 0.');
-                return;
-            }
-            materials.push({ name, quantity, unit, note });
-        }
+    
+    report.clients.forEach((client, idx) => {
+        html += `
+            <div class="client-section-view">
+                <h3>Cliente ${idx + 1}</h3>
+                <p><strong>Nome:</strong> ${escapeHtml(client.clientName || 'N/A')}</p>
+                <p><strong>Cantiere:</strong> ${escapeHtml(client.jobSiteName || 'N/A')}</p>
+                <p><strong>Località:</strong> ${escapeHtml(client.jobSiteLocation || 'N/A')}</p>
+                
+                <div class="entries-list">
+                    ${renderEntriesView(client.entries)}
+                </div>
+            </div>
+        `;
     });
-
-    // Create report object
-    const report = {
-        id: Date.now(),
-        date: new Date(dateValue).getTime(),
-        jobSite,
-        machine,
-        hoursWorked: hours,
-        notes,
-        materials,
-        createdAt: Date.now()
-    };
-
-    // Add to reports array
-    reports.push(report);
-    saveReportsToStorage();
-
-    // Reset form and switch to dashboard
-    resetReportForm();
-    switchScreen('dashboard');
     
-    alert('Rapporto salvato con successo!');
+    content.innerHTML = html;
+    modal.classList.remove('hidden');
 }
 
-function resetReportForm() {
-    document.getElementById('report-form').reset();
-    document.getElementById('materials-list').innerHTML = '';
-    setDefaultDate();
-    hideSuggestions();
-    updateMaterialsVisibility();
+function hideReportModal() {
+    const modal = document.getElementById('report-view-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function renderEntriesView(entries) {
+    if (entries.length === 0) {
+        return '<p class="empty-state-small">Nessuna voce</p>';
+    }
     
-    // Reset hours to default
-    document.getElementById('hours').value = '8.0';
+    return entries.map(entry => {
+        if (entry.type === 'activity') {
+            return `
+                <div class="entry-view activity">
+                    <strong>Attività</strong>
+                    <p>Macchina: ${escapeHtml(entry.data.machine || 'N/A')}</p>
+                    <p>Ore: ${entry.data.hours || 0}</p>
+                    ${entry.data.notes ? `<p>Note: ${escapeHtml(entry.data.notes)}</p>` : ''}
+                </div>
+            `;
+        } else if (entry.type === 'material') {
+            return `
+                <div class="entry-view material">
+                    <strong>Materiale</strong>
+                    <p>Nome: ${escapeHtml(entry.data.name || 'N/A')}</p>
+                    <p>Quantità: ${entry.data.quantity || 0} (${entry.data.unit === 'metric' ? 'm³' : 'ton'})</p>
+                    <p>Da: ${escapeHtml(entry.data.fromLocation || 'N/A')}</p>
+                    <p>A: ${escapeHtml(entry.data.toLocation || 'N/A')}</p>
+                </div>
+            `;
+        } else if (entry.type === 'vehicleMovement') {
+            return `
+                <div class="entry-view vehicle">
+                    <strong>Movimento veicolo</strong>
+                    <p>Veicolo: ${escapeHtml(entry.data.vehicle || 'N/A')}</p>
+                    <p>Metodo: ${escapeHtml(entry.data.transportMethod || 'N/A')}</p>
+                    <p>Da: ${escapeHtml(entry.data.fromLocation || 'N/A')}</p>
+                    <p>A: ${escapeHtml(entry.data.toLocation || 'N/A')}</p>
+                    ${entry.data.notes ? `<p>Note: ${escapeHtml(entry.data.notes)}</p>` : ''}
+                </div>
+            `;
+        }
+        return '';
+    }).join('');
+}
+
+// Daily Preview Rendering
+function renderDailyPreview() {
+    if (!currentDraftDay) return;
+    
+    const container = document.getElementById('daily-preview');
+    const dateDisplay = document.getElementById('current-date-display');
+    const totalHoursDisplay = document.getElementById('total-hours-display');
+    
+    if (dateDisplay) {
+        const date = new Date(currentDraftDay.date + 'T00:00:00');
+        dateDisplay.textContent = date.toLocaleDateString('it-IT', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+    }
+    
+    if (totalHoursDisplay) {
+        totalHoursDisplay.textContent = currentDraftDay.getTotalHours().toFixed(1);
+    }
+    
+    if (!container) return;
+    
+    if (currentDraftDay.clients.length === 0) {
+        container.innerHTML = '<p class="empty-state">Nessun cliente aggiunto. Clicca "Aggiungi Cliente" per iniziare.</p>';
+        return;
+    }
+    
+    container.innerHTML = currentDraftDay.clients.map((client, idx) => renderClientSection(client, idx)).join('');
+    
+    // Attach event listeners for client sections
+    attachClientSectionListeners();
+}
+
+function renderClientSection(client, index) {
+    return `
+        <div class="client-section" data-client-id="${client.id}">
+            <div class="client-header">
+                <h3>Cliente ${index + 1}</h3>
+                <button class="btn-remove-client" onclick="removeClient(${client.id})">Rimuovi</button>
+            </div>
+            
+            <div class="client-info">
+                <div class="form-field">
+                    <label>Nome Cliente</label>
+                    <input type="text" class="input-client" data-field="clientName" 
+                           value="${escapeHtml(client.clientName)}" 
+                           placeholder="Nome del cliente">
+                </div>
+                <div class="form-field">
+                    <label>Nome Cantiere</label>
+                    <input type="text" class="input-client" data-field="jobSiteName" 
+                           value="${escapeHtml(client.jobSiteName)}" 
+                           placeholder="Nome del cantiere">
+                </div>
+                <div class="form-field">
+                    <label>Località Cantiere</label>
+                    <input type="text" class="input-client" data-field="jobSiteLocation" 
+                           value="${escapeHtml(client.jobSiteLocation)}" 
+                           placeholder="Località del cantiere">
+                </div>
+            </div>
+            
+            <div class="entries-section">
+                <h4>Voci</h4>
+                <div class="entries-list">
+                    ${renderClientEntries(client)}
+                </div>
+                <button class="btn btn-secondary btn-add-entry" data-client-id="${client.id}">
+                    + Aggiungi Voce
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function renderClientEntries(client) {
+    if (client.entries.length === 0) {
+        return '<p class="empty-state-small">Nessuna voce. Aggiungi attività, materiali o movimenti.</p>';
+    }
+    
+    return client.entries.map(entry => renderEntryForm(client.id, entry)).join('');
+}
+
+function renderEntryForm(clientId, entry) {
+    if (entry.type === 'activity') {
+        return `
+            <div class="entry-form activity" data-entry-id="${entry.id}">
+                <div class="entry-header">
+                    <strong>Attività</strong>
+                    <button class="btn-remove-entry" onclick="removeEntry(${clientId}, ${entry.id})">×</button>
+                </div>
+                <div class="entry-fields">
+                    <input type="text" class="input-entry" data-field="machine" 
+                           value="${escapeHtml(entry.data.machine || '')}" 
+                           placeholder="Macchina" onchange="updateEntryData(${clientId}, ${entry.id}, 'machine', this.value)">
+                    <input type="number" class="input-entry" data-field="hours" 
+                           value="${entry.data.hours || 8.0}" step="0.5" min="0.5" max="24"
+                           placeholder="Ore" onchange="updateEntryData(${clientId}, ${entry.id}, 'hours', parseFloat(this.value))">
+                    <textarea class="input-entry" data-field="notes" 
+                              placeholder="Note (opzionale)" 
+                              onchange="updateEntryData(${clientId}, ${entry.id}, 'notes', this.value)">${escapeHtml(entry.data.notes || '')}</textarea>
+                </div>
+            </div>
+        `;
+    } else if (entry.type === 'material') {
+        return `
+            <div class="entry-form material" data-entry-id="${entry.id}">
+                <div class="entry-header">
+                    <strong>Materiale</strong>
+                    <button class="btn-remove-entry" onclick="removeEntry(${clientId}, ${entry.id})">×</button>
+                </div>
+                <div class="entry-fields">
+                    <input type="text" class="input-entry" data-field="name" 
+                           value="${escapeHtml(entry.data.name || '')}" 
+                           placeholder="Nome materiale" onchange="updateEntryData(${clientId}, ${entry.id}, 'name', this.value)">
+                    <input type="number" class="input-entry" data-field="quantity" 
+                           value="${entry.data.quantity || 0}" step="0.1" min="0.1"
+                           placeholder="Quantità" onchange="updateEntryData(${clientId}, ${entry.id}, 'quantity', parseFloat(this.value))">
+                    <div class="unit-toggle">
+                        <label><input type="radio" name="unit-${entry.id}" value="metric" 
+                                ${entry.data.unit === 'metric' ? 'checked' : ''} 
+                                onchange="updateEntryData(${clientId}, ${entry.id}, 'unit', this.value)"> m³</label>
+                        <label><input type="radio" name="unit-${entry.id}" value="ton" 
+                                ${entry.data.unit === 'ton' ? 'checked' : ''} 
+                                onchange="updateEntryData(${clientId}, ${entry.id}, 'unit', this.value)"> ton</label>
+                    </div>
+                    <input type="text" class="input-entry" data-field="fromLocation" 
+                           value="${escapeHtml(entry.data.fromLocation || '')}" 
+                           placeholder="Da località" onchange="updateEntryData(${clientId}, ${entry.id}, 'fromLocation', this.value)">
+                    <input type="text" class="input-entry" data-field="toLocation" 
+                           value="${escapeHtml(entry.data.toLocation || '')}" 
+                           placeholder="A località" onchange="updateEntryData(${clientId}, ${entry.id}, 'toLocation', this.value)">
+                </div>
+            </div>
+        `;
+    } else if (entry.type === 'vehicleMovement') {
+        return `
+            <div class="entry-form vehicle" data-entry-id="${entry.id}">
+                <div class="entry-header">
+                    <strong>Movimento Veicolo</strong>
+                    <button class="btn-remove-entry" onclick="removeEntry(${clientId}, ${entry.id})">×</button>
+                </div>
+                <div class="entry-fields">
+                    <input type="text" class="input-entry" data-field="vehicle" 
+                           value="${escapeHtml(entry.data.vehicle || '')}" 
+                           placeholder="Veicolo" onchange="updateEntryData(${clientId}, ${entry.id}, 'vehicle', this.value)">
+                    <input type="text" class="input-entry" data-field="transportMethod" 
+                           value="${escapeHtml(entry.data.transportMethod || '')}" 
+                           placeholder="Metodo di trasporto" onchange="updateEntryData(${clientId}, ${entry.id}, 'transportMethod', this.value)">
+                    <input type="text" class="input-entry" data-field="fromLocation" 
+                           value="${escapeHtml(entry.data.fromLocation || '')}" 
+                           placeholder="Da località" onchange="updateEntryData(${clientId}, ${entry.id}, 'fromLocation', this.value)">
+                    <input type="text" class="input-entry" data-field="toLocation" 
+                           value="${escapeHtml(entry.data.toLocation || '')}" 
+                           placeholder="A località" onchange="updateEntryData(${clientId}, ${entry.id}, 'toLocation', this.value)">
+                    <textarea class="input-entry" data-field="notes" 
+                              placeholder="Note (opzionale)" 
+                              onchange="updateEntryData(${clientId}, ${entry.id}, 'notes', this.value)">${escapeHtml(entry.data.notes || '')}</textarea>
+                </div>
+            </div>
+        `;
+    }
+    return '';
+}
+
+function attachClientSectionListeners() {
+    // Client info inputs
+    document.querySelectorAll('.input-client').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const clientSection = e.target.closest('.client-section');
+            const clientId = parseFloat(clientSection.dataset.clientId);
+            const field = e.target.dataset.field;
+            updateClientInfo(clientId, field, e.target.value);
+        });
+    });
+    
+    // Add entry buttons
+    document.querySelectorAll('.btn-add-entry').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const clientId = parseFloat(e.target.dataset.clientId);
+            showEntryTypeModalForClient(clientId);
+        });
+    });
+}
+
+function showEntryTypeModalForClient(clientId) {
+    const modal = document.getElementById('entry-type-modal');
+    if (!modal) return;
+    
+    modal.dataset.clientId = clientId;
+    modal.classList.remove('hidden');
+}
+
+function selectEntryType(type) {
+    const modal = document.getElementById('entry-type-modal');
+    const clientId = parseFloat(modal.dataset.clientId);
+    
+    addEntry(clientId, type);
+    modal.classList.add('hidden');
 }
 
 // Archive filtering
 function applyFilters() {
     const dateFrom = document.getElementById('filter-date-from').value;
     const dateTo = document.getElementById('filter-date-to').value;
-    const jobSite = document.getElementById('filter-job-site').value.trim().toLowerCase();
-    const machine = document.getElementById('filter-machine').value.trim().toLowerCase();
+    const clientName = document.getElementById('filter-client').value.trim().toLowerCase();
 
-    let filtered = [...reports];
+    let filtered = [...savedReports];
 
     if (dateFrom) {
-        const fromTime = new Date(dateFrom).getTime();
-        filtered = filtered.filter(report => report.date >= fromTime);
+        filtered = filtered.filter(report => report.date >= dateFrom);
     }
 
     if (dateTo) {
-        const toDate = new Date(dateTo);
-        toDate.setHours(23, 59, 59, 999);
-        const toTime = toDate.getTime();
-        filtered = filtered.filter(report => report.date <= toTime);
+        filtered = filtered.filter(report => report.date <= dateTo);
     }
 
-    if (jobSite) {
-        filtered = filtered.filter(report => 
-            report.jobSite.toLowerCase().includes(jobSite)
-        );
+    if (clientName) {
+        filtered = filtered.filter(report => {
+            return report.clients.some(client => 
+                client.clientName.toLowerCase().includes(clientName) ||
+                client.jobSiteName.toLowerCase().includes(clientName)
+            );
+        });
     }
 
-    if (machine) {
-        filtered = filtered.filter(report => 
-            report.machine.toLowerCase().includes(machine)
-        );
-    }
-
-    filtered.sort((a, b) => b.date - a.date);
+    filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     renderArchiveReports(filtered);
 }
@@ -560,34 +892,13 @@ function applyFilters() {
 function clearFilters() {
     document.getElementById('filter-date-from').value = '';
     document.getElementById('filter-date-to').value = '';
-    document.getElementById('filter-job-site').value = '';
-    document.getElementById('filter-machine').value = '';
+    document.getElementById('filter-client').value = '';
     renderArchiveReports();
-}
-
-// Delete report
-function deleteReport(id) {
-    if (!confirm('Sei sicuro di voler eliminare questo rapporto?')) {
-        return;
-    }
-
-    reports = reports.filter(report => report.id !== id);
-    saveReportsToStorage();
-
-    // Refresh current view
-    if (currentScreen === 'dashboard') {
-        updateDashboard();
-        renderRecentReports();
-    } else if (currentScreen === 'archivio') {
-        renderArchiveReports();
-    }
-
-    alert('Rapporto eliminato con successo.');
 }
 
 // Utility function to escape HTML
 function escapeHtml(text) {
     const div = document.createElement('div');
-    div.textContent = text;
+    div.textContent = text || '';
     return div.innerHTML;
 }

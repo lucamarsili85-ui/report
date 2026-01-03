@@ -636,3 +636,15 @@ body {
         min-height: 180px;
     }
 }
+
+/* Preview Mode Styles */
+.report-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.report-actions .btn {
+    flex: 1;
+    min-width: 100px;
+}

@@ -15,11 +15,17 @@ This repository contains the structure and code samples for an Android app built
 ```
 /docs
   ├── spec.md                 # Complete app specification with features and data fields
-  └── pdf_export.md           # PDF export specification and field mappings
+  ├── pdf_export.md           # PDF export specification and field mappings
+  ├── web-demo/               # Web demo with multi-client support (current)
+  ├── web-demo-v1/            # Original web demo (legacy)
+  └── web-demo-v2/            # NEW: Mobile-first progressive daily diary (recommended)
 
 /domain
-  ├── Material.kt             # Material domain model for tracking materials used
-  └── WorkReport.kt           # WorkReport domain model with materials support
+  ├── Material.kt             # Material domain model (legacy)
+  ├── WorkReport.kt           # WorkReport domain model (legacy)
+  ├── DailyReport.kt          # NEW: Daily report container for multiple clients
+  ├── ClientSection.kt        # NEW: Client section within a daily report
+  └── Activity.kt             # NEW: Machine and Material activity models
 
 /app_structure
   ├── WorkReport.kt           # Room entity for work reports (legacy)
@@ -74,6 +80,7 @@ UI (Compose) → ViewModel → Repository → DAO → Room Database
 
 ## Key Features
 
+### Core Features
 - ✅ **Dashboard** - View all work reports with summary
 - ✅ **Create/Edit Reports** - Form with date, job site, machine, hours, notes
 - ✅ **Materials Tracking** - Add and manage multiple materials per report with quantities and units
@@ -83,6 +90,42 @@ UI (Compose) → ViewModel → Repository → DAO → Room Database
 - ✅ **Reactive UI** - Auto-updates using Kotlin Flow
 - ✅ **Material Design 3** - Modern UI components
 - ✅ **PDF Export Ready** - Specification for exporting reports to PDF format
+
+### NEW: Mobile-First Progressive Diary (web-demo-v2)
+- ✅ **Multi-Client Daily Reports** - Single daily report contains multiple clients
+- ✅ **Progressive Saving** - Activities saved immediately as you work
+- ✅ **Colored Client Sections** - Visual distinction with colored borders
+- ✅ **Machine Activities** - Name, hours (manual input), optional description
+- ✅ **Material Activities** - Name, quantity, unit toggle (m³/ton), notes
+- ✅ **Live Total Hours** - Real-time calculation across all activities
+- ✅ **End-of-Day Finalization** - Lock report when complete
+- ✅ **Mobile-First Design** - 48px touch targets, large fonts, green palette
+- ✅ **No Bottom Navigation** - Clean UI with only back arrow
+- ✅ **Italian Language** - Complete Italian interface
+- ✅ **History/Archive** - View all finalized reports
+
+See `/docs/web-demo-v2/` for the complete implementation.
+
+## Data Models
+
+### Legacy Models (Single-Client Reports)
+- `WorkReport.kt` - Single work report with one job site and machine
+- `Material.kt` - Material used in a work report
+
+### NEW: Multi-Client Progressive Diary Models
+- `DailyReport.kt` - Container for a full day's work across multiple clients
+  - Contains multiple `ClientSection` instances
+  - Tracks draft/finalized status
+  - Calculates total hours
+- `ClientSection.kt` - Represents one client within a daily report
+  - Client name and job site location
+  - Contains multiple activities
+  - Has a color identifier for visual distinction
+- `Activity.kt` - Base interface for activities
+  - `MachineActivity` - Machine/equipment usage with hours
+  - `MaterialActivity` - Materials used with quantity and unit
+
+The new models enable the progressive diary workflow where a single daily report can contain work for multiple clients, each with their own machines and materials.
 
 ## Technology Stack
 

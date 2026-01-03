@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4CAF50">
+    <title>Rapportino Giornaliero</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Home Screen -->
+    <div id="home-screen" class="screen">
+        <header class="header">
+            <h1>Rapportino</h1>
+        </header>
+        
+        <main class="main-content">
+            <div class="home-card" id="start-report-btn">
+                <div class="home-icon">📝</div>
+                <h2>Rapportino Giornaliero</h2>
+                <p>Inizia il diario di oggi</p>
+            </div>
+            
+            <div class="home-card" id="history-btn">
+                <div class="home-icon">📁</div>
+                <h2>Storico</h2>
+                <p>Visualizza rapporti salvati</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Daily Report Screen -->
+    <div id="daily-report-screen" class="screen hidden">
+        <header class="header">
+            <button class="back-btn" id="back-to-home">←</button>
+            <h1>Rapportino del <span id="current-date"></span></h1>
+        </header>
+        
+        <main class="main-content">
+            <!-- Dashboard for new client -->
+            <div id="new-client-dashboard" class="dashboard-card">
+                <h2>Aggiungi Cliente</h2>
+                
+                <div class="form-group">
+                    <label for="client-name">Nome Cliente</label>
+                    <input type="text" id="client-name" placeholder="Es. Costruzioni Rossi">
+                </div>
+                
+                <div class="form-group">
+                    <label for="job-site">Località Cantiere</label>
+                    <input type="text" id="job-site" placeholder="Es. Via Roma 10, Milano">
+                </div>
+                
+                <button class="btn btn-primary" id="create-client-btn">Crea sezione cliente</button>
+            </div>
+            
+            <!-- Client Sections Container -->
+            <div id="clients-container"></div>
+            
+            <!-- Total Hours Preview -->
+            <div id="total-hours-preview" class="total-hours hidden">
+                <h3>Totale ore giornata: <span id="total-hours">0.0</span></h3>
+            </div>
+            
+            <!-- Save Report Button -->
+            <button class="btn btn-success btn-large hidden" id="save-report-btn">Salva Rapportino Giornaliero</button>
+        </main>
+    </div>
+
+    <!-- History Screen -->
+    <div id="history-screen" class="screen hidden">
+        <header class="header">
+            <button class="back-btn" id="back-from-history">←</button>
+            <h1>Storico Rapporti</h1>
+        </header>
+        
+        <main class="main-content">
+            <div id="reports-list"></div>
+            <div id="empty-history" class="empty-state hidden">
+                <p>Nessun rapporto salvato</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Report Detail Modal -->
+    <div id="report-detail-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Dettaglio Rapporto</h2>
+                <button class="close-btn" id="close-detail">&times;</button>
+            </div>
+            <div class="modal-body" id="report-detail-content"></div>
+        </div>
+    </div>
+
+    <!-- Confirmation Dialog -->
+    <div id="confirm-dialog" class="modal hidden">
+        <div class="modal-content small">
+            <div class="modal-header">
+                <h3 id="confirm-title">Conferma</h3>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-message"></p>
+                <div class="button-group">
+                    <button class="btn btn-secondary" id="confirm-cancel">Annulla</button>
+                    <button class="btn btn-danger" id="confirm-ok">Conferma</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

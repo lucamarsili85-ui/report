@@ -1,140 +1,170 @@
-# Daily Work Report - Web Demo
+# Rapporto Lavoro Giornaliero - Web Demo Mobile-First
 
-A self-contained web application for tracking daily work reports, built with plain HTML, CSS, and vanilla JavaScript.
+Una versione mobile-first dell'applicazione web per il tracciamento dei rapporti di lavoro giornalieri, completamente in italiano.
 
-## Features
+## Caratteristiche principali
 
-- **Dashboard**: View weekly and monthly hours summaries plus recent reports
-- **New Report Form**: Create reports with date, job site, machine, hours, notes, and materials
-- **Materials Tracking**: Add/remove materials with name, quantity, unit, and optional notes
-- **Job Site Autocomplete**: Type-ahead suggestions from previously entered job sites
-- **Reports Archive**: Filter reports by date range, job site, or machine
-- **LocalStorage Persistence**: All data persists in the browser (no backend required)
+### Design mobile-first
+- **Ottimizzato per dispositivi mobili**: Touch target di almeno 48px per facile interazione
+- **Outdoor-friendly**: Alto contrasto, font grandi (16-24px), spaziatura generosa
+- **Tema chiaro**: Colore primario verde (#4CAF50) per una buona visibilità in esterni
+- **Responsive**: Si adatta a telefoni, tablet e desktop
 
-## How to Use
+### Navigazione
+- **Bottom navigation** con 3 schede:
+  - 📊 **Dashboard**: Visualizza ore settimanali e mensili, rapporti recenti
+  - ➕ **Nuovo**: Crea un nuovo rapporto di lavoro
+  - 📁 **Archivio**: Visualizza e filtra tutti i rapporti
 
-### Opening the Demo
+- **Header bar** con barra di accento colorata:
+  - Dashboard = blu
+  - Nuovo = verde
+  - Archivio = arancione
 
-Simply open `index.html` in any modern web browser:
+### Sistema di ruoli
+- **Prima esecuzione**: Selezione ruolo "Autista" 🚛 o "Operatore" 👷
+- **Comportamento materiali**:
+  - **Autista**: Sezione materiali visibile per impostazione predefinita
+  - **Operatore**: Sezione materiali nascosta con pulsante "Aggiungi materiali (opzionale)"
+- **Impostazioni**: Cambia ruolo o cancella tutti i dati
 
-1. Navigate to the `docs/web-demo/` directory
-2. Double-click `index.html` or open it with your browser
-3. Start creating work reports!
+### Nuovo Rapporto - Sezioni a passi
+1. **Cantiere**: Data e nome cantiere con autocomplete
+2. **Lavoro**: Macchina e ore lavorate con pulsanti +/- e input manuale
+3. **Materiali**: Aggiungi materiali con nome, quantità, unità e note
+4. **Note**: Note opzionali sul lavoro
 
-### Creating a Report
+### Funzionalità
+- ✅ Autocomplete per cantieri (suggerimenti da rapporti precedenti)
+- ✅ Input ore con grandi pulsanti +/- (incremento 0.5 ore)
+- ✅ Gestione materiali dinamica
+- ✅ Filtri archivio (data, cantiere, macchina)
+- ✅ Persistenza localStorage
+- ✅ Compatibilità dati con versione precedente
 
-1. Click the **New Report** tab
-2. Fill in the required fields:
-   - **Date**: Select the work date (defaults to today)
-   - **Job Site**: Enter the job site name (autocomplete will suggest previously used sites)
-   - **Machine**: Enter the machine or equipment used
-   - **Hours**: Enter hours worked (e.g., 8.5)
-   - **Notes**: Optional notes about the work
-3. Optionally add materials:
-   - Click **+ Add Material**
-   - Enter material name, quantity, unit (e.g., "m³", "kg"), and optional note
-   - Add multiple materials or remove unwanted ones
-4. Click **Save Report**
+## Come usare
 
-### Viewing Reports
+### Aprire la demo
+1. Naviga nella cartella `docs/web-demo/`
+2. Apri `index.html` in un browser moderno
+3. Seleziona il tuo ruolo (Autista o Operatore)
+4. Inizia a creare rapporti!
 
-- **Dashboard**: Shows this week's and this month's total hours, plus the 5 most recent reports
-- **Archive**: View all reports with filtering options
-  - Filter by date range (From/To dates)
-  - Filter by job site name (partial match)
-  - Filter by machine name (partial match)
-  - Click **Apply Filters** to filter or **Clear** to reset
+### Creare un rapporto
+1. Tocca **Nuovo** nella barra di navigazione
+2. Compila i campi obbligatori (*):
+   - **Data**: Seleziona la data del lavoro
+   - **Cantiere**: Digita il nome del cantiere (l'autocomplete suggerirà quelli usati prima)
+   - **Macchina**: Inserisci la macchina o attrezzatura usata
+   - **Ore lavorate**: Usa i pulsanti +/- o digita manualmente
+3. Aggiungi materiali (opzionale):
+   - Se sei Autista: la sezione è già visibile
+   - Se sei Operatore: tocca "Aggiungi materiali (opzionale)"
+   - Tocca "+ Aggiungi materiale" per aggiungere righe
+4. Aggiungi note (opzionale)
+5. Tocca **Salva rapporto**
 
-### Managing Data
+### Visualizzare i rapporti
+- **Dashboard**: Mostra ore totali settimanali e mensili + 5 rapporti più recenti
+- **Archivio**: Visualizza tutti i rapporti con opzioni di filtro
+  - Filtra per intervallo di date
+  - Filtra per nome cantiere
+  - Filtra per nome macchina
 
-- **Delete Reports**: Click the **Delete** button on any report card
-- **LocalStorage**: All data is stored in your browser's LocalStorage
-  - Data persists between sessions
-  - Data is browser-specific (not synced across devices)
-  - Clear browser data to reset the demo
+### Gestire le impostazioni
+1. Tocca l'icona ⚙️ in alto a destra
+2. Visualizza il tuo ruolo corrente
+3. Cambia ruolo o cancella tutti i dati
 
-## Technical Details
+## Dettagli tecnici
 
-### File Structure
-
+### Struttura file
 ```
 web-demo/
-├── index.html   # Main HTML structure
-├── styles.css   # All styles and responsive design
-├── app.js       # Application logic and data management
-└── README.md    # This file
+├── index.html   # Struttura HTML con modali e schermate
+├── styles.css   # Stili CSS mobile-first
+├── app.js       # Logica applicazione e gestione dati
+└── README.md    # Questa documentazione
 ```
 
-### No Dependencies
+### Nessuna dipendenza
+- ✅ HTML5 puro
+- ✅ CSS3 con Flexbox e Grid
+- ✅ JavaScript vanilla (ES6+)
+- ❌ Nessun framework o libreria
+- ❌ Nessun tool di build
+- ❌ Nessuna CDN esterna
 
-This demo uses:
-- ✅ Plain HTML5
-- ✅ CSS3 with Flexbox and Grid
-- ✅ Vanilla JavaScript (ES6+)
-- ❌ No frameworks or libraries
-- ❌ No build tools
-- ❌ No external CDNs or assets
-
-### Browser Compatibility
-
-Works in all modern browsers that support:
-- ES6 JavaScript
+### Compatibilità browser
+Funziona in tutti i browser moderni che supportano:
+- JavaScript ES6
 - LocalStorage API
-- CSS Grid and Flexbox
-- HTML5 form elements
+- CSS Grid e Flexbox
+- Elementi form HTML5
 
-Tested in: Chrome, Firefox, Safari, Edge
+Testato in: Chrome, Firefox, Safari, Edge
 
-### Data Format
-
-Reports are stored in LocalStorage as JSON with this structure:
+### Formato dati
+I rapporti sono salvati in localStorage come JSON con questa struttura:
 
 ```javascript
 {
   id: 1234567890,
   date: 1704326400000,  // Unix timestamp
-  jobSite: "Construction Site A",
-  machine: "Excavator CAT 320",
+  jobSite: "Cantiere A",
+  machine: "Escavatore CAT 320",
   hoursWorked: 8.5,
-  notes: "Completed foundation excavation",
+  notes: "Completato scavo fondamenta",
   materials: [
     {
-      name: "Concrete",
+      name: "Cemento",
       quantity: 15.5,
       unit: "m³",
-      note: "Grade C30"
+      note: "Grado C30"
     }
   ],
   createdAt: 1704326400000
 }
 ```
 
-### Responsive Design
+### Ruolo utente
+Il ruolo è salvato separatamente in localStorage:
+```javascript
+localStorage.getItem('userRole') // 'autista' o 'operatore'
+```
 
-- **Desktop** (1200px+): Full layout with side-by-side cards
-- **Tablet** (768px-1024px): Adjusted grid layouts
-- **Mobile** (< 768px): Single-column layout with stacked elements
+## Differenze dalla versione precedente (web-demo-v1)
 
-## Limitations
+### Design
+- Layout mobile-first ottimizzato per touch
+- Navigazione bottom invece di tab in alto
+- Barra di accento colorata nell'header
+- Font più grandi e spaziatura generosa
+- Tema verde invece di viola
 
-- Data is stored locally (browser-specific, not synced)
-- No user authentication
-- No data export/import functionality
-- No backend API integration
-- Limited to browser LocalStorage capacity (~5-10MB)
+### Funzionalità nuove
+- Sistema di ruoli (Autista/Operatore)
+- Comportamento materiali condizionale per ruolo
+- Pulsanti +/- per input ore
+- Sezioni a passi nel form Nuovo
+- Modal impostazioni
+- Interfaccia completamente in italiano
 
-## Future Enhancements
+### Compatibilità dati
+✅ Stessa struttura dati localStorage
+✅ Stessa chiave storage: `dailyWorkReports`
+✅ I dati creati nella versione precedente sono compatibili
 
-Potential improvements for a production version:
-- Backend API integration
-- User authentication
-- Data export (PDF, CSV)
-- Cloud sync across devices
-- Advanced reporting and analytics
-- Photo attachments
-- Offline PWA support
-- Print-friendly views
+## Limitazioni
+- Dati salvati localmente (specifici del browser, non sincronizzati)
+- Nessuna autenticazione utente
+- Nessuna funzionalità export/import dati
+- Nessuna integrazione API backend
+- Limitato alla capacità localStorage del browser (~5-10MB)
 
-## License
+## GitHub Pages
+Questa demo è accessibile tramite GitHub Pages all'indirizzo:
+`https://[username].github.io/report/web-demo/`
 
-This demo is part of the Daily Work Report App project.
+## Licenza
+Questa demo fa parte del progetto Daily Work Report App.

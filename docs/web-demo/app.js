@@ -265,9 +265,9 @@ function addMaterialRow() {
     row.className = 'material-row';
     row.dataset.id = materialCounter;
     row.innerHTML = `
-        <input type="text" placeholder="Material name" class="material-name" required>
-        <input type="number" placeholder="Qty" class="material-quantity" step="0.1" min="0.1" required>
-        <input type="text" placeholder="Unit" class="material-unit" required>
+        <input type="text" placeholder="Material name" class="material-name">
+        <input type="number" placeholder="Qty" class="material-quantity" step="0.1" min="0.1">
+        <input type="text" placeholder="Unit" class="material-unit">
         <input type="text" placeholder="Note (optional)" class="material-note">
         <button type="button" class="btn-remove" onclick="removeMaterialRow(${materialCounter})">Remove</button>
     `;

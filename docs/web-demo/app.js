@@ -27,8 +27,9 @@ class DraftDay {
         let total = 0;
         if (this.clients && this.clients.length > 0) {
             this.clients.forEach(client => {
-                const activities = client.activities || client.entries || [];
+                const activities = getClientActivities(client);
                 activities.forEach(activity => {
+                    // Support both new format (mezzo) and old format (activity)
                     if ((activity.type === 'mezzo' || activity.type === 'activity') && activity.data && activity.data.hours) {
                         total += parseFloat(activity.data.hours);
                     }
@@ -55,6 +56,11 @@ class Activity {
         this.data = {};
         this.createdAt = Date.now();
     }
+}
+
+// Helper function to get activities from a client (handles backward compatibility)
+function getClientActivities(client) {
+    return client.activities || client.entries || [];
 }
 
 // Initialize the app
@@ -116,7 +122,12 @@ function loadDataFromStorage() {
     try {
         const draftData = localStorage.getItem(DRAFT_DAYS_KEY);
         if (draftData) {
-            draftDays = JSON.parse(draftData);
+            const parsedDrafts = JSON.parse(draftData);
+            // Restore prototype methods by creating new DraftDay instances
+            draftDays = parsedDrafts.map(draft => {
+                const restoredDraft = Object.assign(new DraftDay(draft.date, draft.role), draft);
+                return restoredDraft;
+            });
         }
         
         const savedData = localStorage.getItem(SAVED_REPORTS_KEY);
@@ -609,7 +620,7 @@ function showReportModal(report) {
                 <p><strong>Località/Cantiere:</strong> ${escapeHtml(client.jobSite || 'N/A')}</p>
                 
                 <div class="entries-list">
-                    ${renderActivitiesView(client.activities || client.entries || [])}
+                    ${renderActivitiesView(getClientActivities(client))}
                 </div>
             </div>
         `;
@@ -755,11 +766,12 @@ function renderClientSlide(client, index) {
 }
 
 function renderActivities(client) {
-    if (client.activities.length === 0) {
+    const activities = getClientActivities(client);
+    if (activities.length === 0) {
         return '<p class="empty-state-small">Nessuna attività. Aggiungi mezzi o materiali.</p>';
     }
     
-    return client.activities.map(activity => renderActivityCard(client.id, activity)).join('');
+    return activities.map(activity => renderActivityCard(client.id, activity)).join('');
 }
 
 function renderActivityCard(clientId, activity) {

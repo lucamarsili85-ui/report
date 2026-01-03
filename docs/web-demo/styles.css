@@ -1306,8 +1306,8 @@ textarea.input-entry {
     padding: var(--spacing-xs);
     border-radius: 50%;
     cursor: pointer;
-    min-width: 40px;
-    min-height: 40px;
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1381,8 +1381,8 @@ textarea.input-entry {
     font-size: 24px;
     cursor: pointer;
     padding: 0;
-    min-width: 32px;
-    min-height: 32px;
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
     display: flex;
     align-items: center;
     justify-content: center;

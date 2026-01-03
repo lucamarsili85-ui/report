@@ -24,8 +24,8 @@ data class DailyReport(
     val clients: List<ClientSection> = emptyList(),
     
     /**
-     * Status of the report: "draft" or "finalized"
-     * Draft reports can be edited, finalized reports are locked
+     * Status of the report: "draft" or "final"
+     * Draft reports can be edited, final reports are locked
      */
     val status: String = "draft",
     

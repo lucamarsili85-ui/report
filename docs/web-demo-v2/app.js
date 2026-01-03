@@ -602,8 +602,8 @@ function editReportFromHistory(index) {
         'Modifica Rapporto',
         `Vuoi modificare il rapporto del ${formatDate(report.date)}? Diventerà la bozza corrente.`,
         () => {
-            // Set as current report and change to draft
-            currentReport = {...report};
+            // Deep clone the report to avoid reference issues
+            currentReport = JSON.parse(JSON.stringify(report));
             currentReport.status = STATUS_DRAFT;
             currentReport.finalizedAt = null;
             

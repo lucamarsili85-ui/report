@@ -14,7 +14,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.workreport.data.entity.DailyReportEntity
 import com.example.workreport.data.entity.WorkReport
+import com.example.workreport.ui.viewmodel.DailyReportViewModel
 import com.example.workreport.ui.viewmodel.WorkReportViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -25,19 +27,31 @@ import java.util.*
  * Shows a list of work reports with summary information and provides
  * quick access to create new reports.
  * 
- * @param viewModel The WorkReportViewModel for managing data
- * @param onNavigateToNewReport Callback to navigate to the new report screen
- * @param onReportClick Callback when a report is clicked for editing
+ * NOTE: This screen now supports both legacy WorkReport and new DailyReport models.
+ * 
+ * @param workReportViewModel The WorkReportViewModel for managing legacy data (optional)
+ * @param dailyReportViewModel The DailyReportViewModel for managing daily journal data (optional)
+ * @param onNavigateToNewReport Callback to navigate to the new report screen (legacy)
+ * @param onNavigateToDailyJournal Callback to navigate to the daily journal screen
+ * @param onReportClick Callback when a legacy report is clicked for editing
+ * @param onDailyReportClick Callback when a daily report is clicked for viewing/editing
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-    viewModel: WorkReportViewModel,
-    onNavigateToNewReport: () -> Unit,
-    onReportClick: (WorkReport) -> Unit
+    workReportViewModel: WorkReportViewModel? = null,
+    dailyReportViewModel: DailyReportViewModel? = null,
+    onNavigateToNewReport: (() -> Unit)? = null,
+    onNavigateToDailyJournal: (() -> Unit)? = null,
+    onReportClick: ((WorkReport) -> Unit)? = null,
+    onDailyReportClick: ((DailyReportEntity) -> Unit)? = null
 ) {
-    val reports by viewModel.allReports.collectAsState()
-    val totalHours by viewModel.totalHours.collectAsState()
+    // Legacy reports
+    val legacyReports by (workReportViewModel?.allReports?.collectAsState() ?: remember { mutableStateOf(emptyList()) })
+    val legacyTotalHours by (workReportViewModel?.totalHours?.collectAsState() ?: remember { mutableStateOf(0.0) })
+    
+    // Daily reports
+    val dailyReports by (dailyReportViewModel?.finalizedReports?.collectAsState() ?: remember { mutableStateOf(emptyList()) })
     
     Scaffold(
         topBar = {
@@ -50,14 +64,28 @@ fun DashboardScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToNewReport,
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Report"
-                )
+            // Show Daily Journal FAB if dailyReportViewModel is provided
+            if (dailyReportViewModel != null && onNavigateToDailyJournal != null) {
+                FloatingActionButton(
+                    onClick = onNavigateToDailyJournal,
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Daily Journal"
+                    )
+                }
+            } else if (workReportViewModel != null && onNavigateToNewReport != null) {
+                // Fallback to legacy FAB
+                FloatingActionButton(
+                    onClick = onNavigateToNewReport,
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Report"
+                    )
+                }
             }
         }
     ) { paddingValues ->
@@ -66,26 +94,52 @@ fun DashboardScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Total hours summary card
-            if (reports.isNotEmpty()) {
-                SummaryCard(totalHours = totalHours)
+            // Summary card (show daily reports total if available, otherwise legacy)
+            val showSummary = dailyReports.isNotEmpty() || legacyReports.isNotEmpty()
+            if (showSummary) {
+                val displayTotalHours = if (dailyReports.isNotEmpty()) {
+                    dailyReports.sumOf { it.totalHours }
+                } else {
+                    legacyTotalHours
+                }
+                SummaryCard(totalHours = displayTotalHours)
             }
             
-            // Reports list
-            if (reports.isEmpty()) {
-                EmptyState()
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(reports) { report ->
-                        ReportCard(
-                            report = report,
-                            onClick = { onReportClick(report) }
-                        )
+            // Show appropriate list based on what's available
+            when {
+                dailyReports.isNotEmpty() -> {
+                    // Show daily reports
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(dailyReports) { report ->
+                            DailyReportCard(
+                                report = report,
+                                onClick = { onDailyReportClick?.invoke(report) }
+                            )
+                        }
                     }
+                }
+                legacyReports.isNotEmpty() -> {
+                    // Show legacy reports
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(legacyReports) { report ->
+                            ReportCard(
+                                report = report,
+                                onClick = { onReportClick?.invoke(report) }
+                            )
+                        }
+                    }
+                }
+                else -> {
+                    // Empty state
+                    EmptyState()
                 }
             }
         }
@@ -154,7 +208,7 @@ private fun EmptyState() {
 }
 
 /**
- * Individual report card item.
+ * Individual report card item (legacy).
  */
 @Composable
 private fun ReportCard(
@@ -238,3 +292,100 @@ private fun ReportCard(
         }
     }
 }
+
+/**
+ * Daily report card item (new model).
+ */
+@Composable
+private fun DailyReportCard(
+    report: DailyReportEntity,
+    onClick: () -> Unit
+) {
+    val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (report.status == DailyReportEntity.STATUS_FINAL)
+                MaterialTheme.colorScheme.tertiaryContainer
+            else
+                MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // Date and status
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = dateFormat.format(Date(report.date)),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                
+                // Status badge
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = if (report.status == DailyReportEntity.STATUS_FINAL)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.secondary
+                ) {
+                    Text(
+                        text = report.status,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (report.status == DailyReportEntity.STATUS_FINAL)
+                            MaterialTheme.colorScheme.onPrimary
+                        else
+                            MaterialTheme.colorScheme.onSecondary
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Summary info
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = "Total Hours",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = String.format("%.1f h", report.totalHours),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Trasferta",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = if (report.trasferta) "Yes" else "No",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+    }
+}
+

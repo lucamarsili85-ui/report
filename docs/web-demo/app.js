@@ -105,9 +105,8 @@ function initializeApp() {
     setDefaultDate();
     loadOrCreateTodayDraft();
     updateDashboard();
-    renderRecentReports();
     renderArchiveReports();
-    switchScreen('dashboard');
+    switchScreen('home');
 }
 
 // LocalStorage operations
@@ -200,8 +199,7 @@ function finalizeDraftDay() {
     // Load next day or create new
     loadOrCreateTodayDraft();
     updateDashboard();
-    renderRecentReports();
-    switchScreen('dashboard');
+    switchScreen('home');
 }
 
 // Event listeners setup
@@ -211,6 +209,16 @@ function setupEventListeners() {
         btn.addEventListener('click', () => {
             const screen = btn.dataset.screen;
             switchScreen(screen);
+        });
+    });
+
+    // Home cards navigation
+    document.querySelectorAll('.home-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const navigate = card.dataset.navigate;
+            if (navigate) {
+                switchScreen(navigate);
+            }
         });
     });
 
@@ -259,9 +267,9 @@ function switchScreen(screenName) {
 
     // Map screen names to IDs
     const screenMap = {
-        'dashboard': 'dashboard-screen',
-        'nuovo': 'nuovo-screen',
-        'archivio': 'archivio-screen'
+        'home': 'home-screen',
+        'rapportino': 'rapportino-screen',
+        'storico': 'storico-screen'
     };
 
     const screenId = screenMap[screenName];
@@ -269,9 +277,9 @@ function switchScreen(screenName) {
 
     // Update header
     const titles = {
-        'dashboard': 'Dashboard',
-        'nuovo': 'Giornata di lavoro',
-        'archivio': 'Archivio'
+        'home': 'Home',
+        'rapportino': 'Rapportino Giornaliero',
+        'storico': 'Storico'
     };
     document.getElementById('screen-title').textContent = titles[screenName];
 
@@ -280,12 +288,11 @@ function switchScreen(screenName) {
     accent.className = 'header-accent ' + screenName;
 
     // Refresh data when needed
-    if (screenName === 'dashboard') {
+    if (screenName === 'home') {
         updateDashboard();
-        renderRecentReports();
-    } else if (screenName === 'nuovo') {
+    } else if (screenName === 'rapportino') {
         renderDailyPreview();
-    } else if (screenName === 'archivio') {
+    } else if (screenName === 'storico') {
         renderArchiveReports();
     }
 }
@@ -390,7 +397,7 @@ function addEntry(clientId, type) {
     if (type === 'activity') {
         entry.data = { machine: '', hours: 8.0, notes: '' };
     } else if (type === 'material') {
-        entry.data = { name: '', quantity: 0, unit: 'metric', fromLocation: '', toLocation: '' };
+        entry.data = { name: '', quantity: 0, unit: 'mc', fromLocation: '', toLocation: '' };
     } else if (type === 'vehicleMovement') {
         entry.data = { vehicle: '', transportMethod: '', fromLocation: '', toLocation: '', notes: '' };
     }
@@ -483,23 +490,6 @@ function calculateMonthlyHours() {
     });
 
     return total;
-}
-
-// Recent reports rendering
-function renderRecentReports() {
-    const container = document.getElementById('recent-reports');
-    const recentReports = [...savedReports]
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .slice(0, 5);
-
-    if (recentReports.length === 0) {
-        container.innerHTML = '<p class="empty-state">Nessun rapporto finalizzato. Lavora sulla tua giornata!</p>';
-        return;
-    }
-
-    container.innerHTML = recentReports.map(report => createReportCard(report)).join('');
-    
-    attachReportViewListeners(container);
 }
 
 // Archive reports rendering
@@ -631,11 +621,12 @@ function renderEntriesView(entries) {
                 </div>
             `;
         } else if (entry.type === 'material') {
+            const unit = entry.data.unit === 'mc' || entry.data.unit === 'metric' ? 'm³' : 'ton';
             return `
                 <div class="entry-view material">
                     <strong>Materiale</strong>
                     <p>Nome: ${escapeHtml(entry.data.name || 'N/A')}</p>
-                    <p>Quantità: ${entry.data.quantity || 0} (${entry.data.unit === 'metric' ? 'm³' : 'ton'})</p>
+                    <p>Quantità: ${entry.data.quantity || 0} ${unit}</p>
                     <p>Da: ${escapeHtml(entry.data.fromLocation || 'N/A')}</p>
                     <p>A: ${escapeHtml(entry.data.toLocation || 'N/A')}</p>
                 </div>
@@ -692,10 +683,28 @@ function renderDailyPreview() {
 }
 
 function renderClientSection(client, index) {
+    // Generate a color for the client card based on index
+    const colors = [
+        '#81C784', // Green
+        '#64B5F6', // Blue
+        '#FFB74D', // Orange
+        '#9575CD', // Purple
+        '#4DD0E1', // Cyan
+        '#F06292', // Pink
+        '#AED581', // Light Green
+        '#FFD54F', // Yellow
+    ];
+    const cardColor = colors[index % colors.length];
+    
     return `
-        <div class="client-section" data-client-id="${client.id}">
-            <div class="client-header">
-                <h3>Cliente ${index + 1}</h3>
+        <div class="client-section" data-client-id="${client.id}" style="border-left: 6px solid ${cardColor};">
+            <div class="client-header" style="border-bottom-color: ${cardColor};">
+                <div class="client-title">
+                    <h3>Cliente ${index + 1}</h3>
+                    <div class="client-location-badge">
+                        ${escapeHtml(client.jobSiteLocation || 'Località non specificata')}
+                    </div>
+                </div>
                 <button class="btn-remove-client" onclick="removeClient(${client.id})">Rimuovi</button>
             </div>
             
@@ -753,7 +762,7 @@ function renderEntryForm(clientId, entry) {
                     <input type="text" class="input-entry" data-field="machine" 
                            value="${escapeHtml(entry.data.machine || '')}" 
                            placeholder="Macchina" onchange="updateEntryData(${clientId}, ${entry.id}, 'machine', this.value)">
-                    <input type="number" class="input-entry" data-field="hours" 
+                    <input type="number" inputmode="decimal" class="input-entry" data-field="hours" 
                            value="${entry.data.hours || 8.0}" step="0.5" min="0.5" max="24"
                            placeholder="Ore" onchange="updateEntryData(${clientId}, ${entry.id}, 'hours', parseFloat(this.value))">
                     <textarea class="input-entry" data-field="notes" 
@@ -773,12 +782,12 @@ function renderEntryForm(clientId, entry) {
                     <input type="text" class="input-entry" data-field="name" 
                            value="${escapeHtml(entry.data.name || '')}" 
                            placeholder="Nome materiale" onchange="updateEntryData(${clientId}, ${entry.id}, 'name', this.value)">
-                    <input type="number" class="input-entry" data-field="quantity" 
-                           value="${entry.data.quantity || 0}" step="0.1" min="0.1"
+                    <input type="number" inputmode="decimal" class="input-entry" data-field="quantity" 
+                           value="${entry.data.quantity || 0}" step="0.1" min="0"
                            placeholder="Quantità" onchange="updateEntryData(${clientId}, ${entry.id}, 'quantity', parseFloat(this.value))">
                     <div class="unit-toggle">
-                        <label><input type="radio" name="unit-${entry.id}" value="metric" 
-                                ${entry.data.unit === 'metric' ? 'checked' : ''} 
+                        <label><input type="radio" name="unit-${entry.id}" value="mc" 
+                                ${entry.data.unit === 'mc' || entry.data.unit === 'metric' ? 'checked' : ''} 
                                 onchange="updateEntryData(${clientId}, ${entry.id}, 'unit', this.value)"> m³</label>
                         <label><input type="radio" name="unit-${entry.id}" value="ton" 
                                 ${entry.data.unit === 'ton' ? 'checked' : ''} 

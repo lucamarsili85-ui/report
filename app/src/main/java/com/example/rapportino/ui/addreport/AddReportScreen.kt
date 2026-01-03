@@ -143,7 +143,7 @@ fun AddReportScreen(
                     machineError = machine.isBlank()
                     
                     val hours = workedHours.toDoubleOrNull()
-                    workedHoursError = hours == null || hours <= 0
+                    workedHoursError = hours == null || hours < 0.1
 
                     if (!jobSiteError && !machineError && !workedHoursError) {
                         viewModel.saveReport(

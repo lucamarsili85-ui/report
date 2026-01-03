@@ -2,7 +2,6 @@ package com.example.rapportino.data.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import java.util.Date
 
 @Entity(tableName = "reports")
 data class Report(
@@ -13,5 +12,5 @@ data class Report(
     val machine: String,
     val workedHours: Double,
     val notes: String,
-    val createdAt: Long = Date().time
+    val createdAt: Long = System.currentTimeMillis()
 )

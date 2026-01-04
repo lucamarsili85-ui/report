@@ -107,6 +107,23 @@ class DailyReportRepository(private val dao: DailyReportDao) {
     }
     
     /**
+     * Update a client section (rename client/location).
+     */
+    suspend fun updateClientSection(
+        clientSectionId: Long,
+        clientName: String,
+        jobSite: String
+    ) {
+        val existing = dao.getClientSectionById(clientSectionId) ?: return
+        dao.updateClientSection(
+            existing.copy(
+                clientName = clientName,
+                jobSite = jobSite
+            )
+        )
+    }
+    
+    /**
      * Add a machine activity to a client section.
      * This is a progressive save operation.
      */
@@ -124,6 +141,26 @@ class DailyReportRepository(private val dao: DailyReportDao) {
             description = description
         )
         return dao.insertActivity(activity)
+    }
+    
+    /**
+     * Update a machine activity.
+     */
+    suspend fun updateMachineActivity(
+        activityId: Long,
+        machine: String,
+        hours: Double,
+        description: String = ""
+    ) {
+        val existing = dao.getActivityById(activityId) ?: return
+        if (existing.activityType != ActivityEntity.TYPE_MACHINE) return
+        dao.updateActivity(
+            existing.copy(
+                machine = machine,
+                hours = hours,
+                description = description
+            )
+        )
     }
     
     /**
@@ -146,6 +183,28 @@ class DailyReportRepository(private val dao: DailyReportDao) {
             notes = notes
         )
         return dao.insertActivity(activity)
+    }
+    
+    /**
+     * Update a material activity.
+     */
+    suspend fun updateMaterialActivity(
+        activityId: Long,
+        materialName: String,
+        quantity: Double,
+        unit: String,
+        notes: String = ""
+    ) {
+        val existing = dao.getActivityById(activityId) ?: return
+        if (existing.activityType != ActivityEntity.TYPE_MATERIAL) return
+        dao.updateActivity(
+            existing.copy(
+                materialName = materialName,
+                quantity = quantity,
+                unit = unit,
+                notes = notes
+            )
+        )
     }
     
     /**

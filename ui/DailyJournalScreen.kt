@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -95,7 +96,9 @@ fun DailyJournalScreen(
                     totalHours = totalHours,
                     trasferta = report.trasferta,
                     clientCount = clientSections.size,
-                    dateFormat = dateFormat
+                    dateFormat = dateFormat,
+                    isPreviewMode = isPreviewMode,
+                    onTrasfertaToggle = { viewModel.updateTrasferta(it) }
                 )
             }
             
@@ -149,7 +152,9 @@ private fun PreviewDashboard(
     totalHours: Double,
     trasferta: Boolean,
     clientCount: Int,
-    dateFormat: SimpleDateFormat
+    dateFormat: SimpleDateFormat,
+    isPreviewMode: Boolean,
+    onTrasfertaToggle: (Boolean) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -200,11 +205,28 @@ private fun PreviewDashboard(
                         text = "Trasferta",
                         style = MaterialTheme.typography.labelMedium
                     )
-                    Text(
-                        text = if (trasferta) "Yes" else "No",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (isPreviewMode) {
+                        Text(
+                            text = if (trasferta) "Yes" else "No",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Switch(
+                                checked = trasferta,
+                                onCheckedChange = onTrasfertaToggle
+                            )
+                            Text(
+                                text = if (trasferta) "Yes" else "No",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -290,6 +312,9 @@ private fun ClientSectionCard(
     viewModel: DailyReportViewModel
 ) {
     var expanded by remember { mutableStateOf(true) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var editClientName by remember(clientSection.id) { mutableStateOf(clientSection.clientName) }
+    var editJobSite by remember(clientSection.id) { mutableStateOf(clientSection.jobSite) }
     
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -318,14 +343,74 @@ private fun ClientSectionCard(
                 }
                 
                 if (!isPreviewMode) {
-                    IconButton(onClick = { viewModel.deleteClientSection(clientSection) }) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete client",
-                            tint = MaterialTheme.colorScheme.error
-                        )
+                    Row {
+                        IconButton(onClick = { 
+                            // Reset fields to latest values when reopening dialog
+                            editClientName = clientSection.clientName
+                            editJobSite = clientSection.jobSite
+                            showEditDialog = true 
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit client"
+                            )
+                        }
+                        IconButton(onClick = { viewModel.deleteClientSection(clientSection) }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete client",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
+            }
+            
+            if (showEditDialog) {
+                AlertDialog(
+                    onDismissRequest = { showEditDialog = false },
+                    title = { Text("Edit Client") },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = editClientName,
+                                onValueChange = { editClientName = it },
+                                label = { Text("Client Name *") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
+                            )
+                            OutlinedTextField(
+                                value = editJobSite,
+                                onValueChange = { editJobSite = it },
+                                label = { Text("Job Site Location *") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                if (editClientName.trim().isNotEmpty() && editJobSite.trim().isNotEmpty()) {
+                                    viewModel.updateClientSection(
+                                        clientSection.id,
+                                        editClientName.trim(),
+                                        editJobSite.trim()
+                                    )
+                                    showEditDialog = false
+                                }
+                            },
+                            enabled = editClientName.trim().isNotEmpty() && editJobSite.trim().isNotEmpty()
+                        ) {
+                            Text("Save")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showEditDialog = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
             }
             
             Spacer(modifier = Modifier.height(12.dp))
@@ -388,7 +473,26 @@ private fun ClientSectionCard(
                         ActivityItem(
                             activity = activity,
                             isPreviewMode = isPreviewMode,
-                            onDelete = { viewModel.deleteActivity(activity) }
+                            onDelete = { viewModel.deleteActivity(activity) },
+                            onEditMachine = { machine, hours, description ->
+                                viewModel.updateMachineActivity(
+                                    activity.id,
+                                    clientSection.id,
+                                    machine,
+                                    hours,
+                                    description
+                                )
+                            },
+                            onEditMaterial = { materialName, quantity, unit, notes ->
+                                viewModel.updateMaterialActivity(
+                                    activity.id,
+                                    clientSection.id,
+                                    materialName,
+                                    quantity,
+                                    unit,
+                                    notes
+                                )
+                            }
                         )
                     }
                 }
@@ -591,8 +695,19 @@ private fun AddMaterialActivityButton(
 private fun ActivityItem(
     activity: ActivityEntity,
     isPreviewMode: Boolean,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEditMachine: (String, Double, String) -> Unit,
+    onEditMaterial: (String, Double, String, String) -> Unit
 ) {
+    var showEditDialog by remember { mutableStateOf(false) }
+    var editMachine by remember(activity.id) { mutableStateOf(activity.machine.orEmpty()) }
+    var editHours by remember(activity.id) { mutableStateOf(activity.hours?.toString().orEmpty()) }
+    var editDescription by remember(activity.id) { mutableStateOf(activity.description.orEmpty()) }
+    var editMaterialName by remember(activity.id) { mutableStateOf(activity.materialName.orEmpty()) }
+    var editQuantity by remember(activity.id) { mutableStateOf(activity.quantity?.toString().orEmpty()) }
+    var editUnit by remember(activity.id) { mutableStateOf(activity.unit ?: "m³") }
+    var editNotes by remember(activity.id) { mutableStateOf(activity.notes.orEmpty()) }
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -649,14 +764,158 @@ private fun ActivityItem(
             }
             
             if (!isPreviewMode) {
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete activity",
-                        tint = MaterialTheme.colorScheme.error
-                    )
+                Row {
+                    IconButton(onClick = { showEditDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit activity"
+                        )
+                    }
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete activity",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
+        }
+    }
+    
+    if (showEditDialog) {
+        if (activity.activityType == ActivityEntity.TYPE_MACHINE) {
+            val parsedHours = editHours.toDoubleOrNull()
+            val isMachineValid = editMachine.trim().isNotEmpty() &&
+                    parsedHours?.let { it > 0 } == true
+            AlertDialog(
+                onDismissRequest = { showEditDialog = false },
+                title = { Text("Edit Machine Activity") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = editMachine,
+                            onValueChange = { editMachine = it },
+                            label = { Text("Machine Name *") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = editHours,
+                            onValueChange = { editHours = it },
+                            label = { Text("Hours *") },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = editDescription,
+                            onValueChange = { editDescription = it },
+                            label = { Text("Description (Optional)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            maxLines = 3
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val hoursValue = parsedHours
+                            if (isMachineValid && hoursValue != null) {
+                                onEditMachine(
+                                    editMachine.trim(),
+                                    hoursValue,
+                                    editDescription.trim()
+                                )
+                                showEditDialog = false
+                            }
+                        },
+                        enabled = isMachineValid
+                    ) {
+                        Text("Save")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showEditDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        } else {
+            val parsedQuantity = editQuantity.toDoubleOrNull()
+            val isMaterialValid = editMaterialName.trim().isNotEmpty() &&
+                    parsedQuantity?.let { it > 0 } == true
+            AlertDialog(
+                onDismissRequest = { showEditDialog = false },
+                title = { Text("Edit Material Activity") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = editMaterialName,
+                            onValueChange = { editMaterialName = it },
+                            label = { Text("Material Name *") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = editQuantity,
+                            onValueChange = { editQuantity = it },
+                            label = { Text("Quantity *") },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            singleLine = true
+                        )
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            FilterChip(
+                                selected = editUnit == "m³",
+                                onClick = { editUnit = "m³" },
+                                label = { Text("m³") }
+                            )
+                            FilterChip(
+                                selected = editUnit == "ton",
+                                onClick = { editUnit = "ton" },
+                                label = { Text("ton") }
+                            )
+                        }
+                        
+                        OutlinedTextField(
+                            value = editNotes,
+                            onValueChange = { editNotes = it },
+                            label = { Text("Notes (Optional)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            maxLines = 3
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val quantityValue = parsedQuantity
+                            if (isMaterialValid && quantityValue != null) {
+                                onEditMaterial(
+                                    editMaterialName.trim(),
+                                    quantityValue,
+                                    editUnit,
+                                    editNotes.trim()
+                                )
+                                showEditDialog = false
+                            }
+                        },
+                        enabled = isMaterialValid
+                    ) {
+                        Text("Save")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showEditDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }

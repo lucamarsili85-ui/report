@@ -107,7 +107,8 @@ function saveCurrentReport() {
 function autosaveDraft() {
     if (currentReport && currentReport.isDraft()) {
         saveCurrentReport();
-        console.log('Draft autosaved at', new Date().toLocaleTimeString());
+        // TODO: Replace with proper logging mechanism in production
+        // console.log('Draft autosaved at', new Date().toLocaleTimeString());
     }
 }
 
@@ -265,16 +266,10 @@ function updateDashboard() {
     updateLatestReportsPreview();
 }
 
-// Calculate total hours for current week
+// Calculate total hours for current week (Monday to Sunday)
 function calculateWeekHours() {
     const now = new Date();
-    const startOfWeek = new Date(now);
-    
-    // Get Monday of current week
-    const day = now.getDay();
-    const diff = day === 0 ? -6 : 1 - day; // If Sunday (0), go back 6 days to Monday
-    startOfWeek.setDate(now.getDate() + diff);
-    startOfWeek.setHours(0, 0, 0, 0);
+    const startOfWeek = getStartOfWeek(now);
     
     let totalHours = 0;
     const countedIds = new Set();
@@ -297,6 +292,17 @@ function calculateWeekHours() {
     }
     
     return totalHours;
+}
+
+// Get Monday of current week
+function getStartOfWeek(date) {
+    const startOfWeek = new Date(date);
+    const day = date.getDay();
+    // If Sunday (0), go back 6 days to Monday; otherwise calculate difference from Monday
+    const diff = day === 0 ? -6 : 1 - day;
+    startOfWeek.setDate(date.getDate() + diff);
+    startOfWeek.setHours(0, 0, 0, 0);
+    return startOfWeek;
 }
 
 // Update latest reports preview on dashboard
@@ -331,15 +337,17 @@ function createReportPreviewCard(report, index) {
     const firstClient = report.clients[0];
     const jobSite = firstClient ? firstClient.jobSite : 'N/A';
     
-    // Get main machines (first 2)
+    // Get main machines (first 2) - stop early for performance
     const machines = [];
-    report.clients.forEach(client => {
-        client.activities.forEach(activity => {
-            if (activity.type === 'machine' && machines.length < 2) {
+    outerLoop:
+    for (const client of report.clients) {
+        for (const activity of client.activities) {
+            if (activity.type === 'machine') {
                 machines.push(activity.machine);
+                if (machines.length >= 2) break outerLoop;
             }
-        });
-    });
+        }
+    }
     
     const machinesText = machines.length > 0 ? machines.join(', ') : 'Nessuna macchina';
     

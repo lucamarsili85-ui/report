@@ -345,6 +345,7 @@ private fun ClientSectionCard(
                 if (!isPreviewMode) {
                     Row {
                         IconButton(onClick = { 
+                            // Reset fields to latest values when reopening dialog
                             editClientName = clientSection.clientName
                             editJobSite = clientSection.jobSite
                             showEditDialog = true 
@@ -784,6 +785,9 @@ private fun ActivityItem(
     
     if (showEditDialog) {
         if (activity.activityType == ActivityEntity.TYPE_MACHINE) {
+            val parsedHours = editHours.toDoubleOrNull()
+            val isMachineValid = editMachine.trim().isNotEmpty() &&
+                    parsedHours?.let { it > 0 } == true
             AlertDialog(
                 onDismissRequest = { showEditDialog = false },
                 title = { Text("Edit Machine Activity") },
@@ -816,8 +820,8 @@ private fun ActivityItem(
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            val hoursValue = editHours.toDoubleOrNull()
-                            if (editMachine.trim().isNotEmpty() && hoursValue != null && hoursValue > 0) {
+                            val hoursValue = parsedHours
+                            if (isMachineValid && hoursValue != null) {
                                 onEditMachine(
                                     editMachine.trim(),
                                     hoursValue,
@@ -826,8 +830,7 @@ private fun ActivityItem(
                                 showEditDialog = false
                             }
                         },
-                        enabled = editMachine.trim().isNotEmpty() &&
-                                  editHours.toDoubleOrNull()?.let { it > 0 } == true
+                        enabled = isMachineValid
                     ) {
                         Text("Save")
                     }
@@ -839,6 +842,9 @@ private fun ActivityItem(
                 }
             )
         } else {
+            val parsedQuantity = editQuantity.toDoubleOrNull()
+            val isMaterialValid = editMaterialName.trim().isNotEmpty() &&
+                    parsedQuantity?.let { it > 0 } == true
             AlertDialog(
                 onDismissRequest = { showEditDialog = false },
                 title = { Text("Edit Material Activity") },
@@ -888,8 +894,8 @@ private fun ActivityItem(
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            val quantityValue = editQuantity.toDoubleOrNull()
-                            if (editMaterialName.trim().isNotEmpty() && quantityValue != null && quantityValue > 0) {
+                            val quantityValue = parsedQuantity
+                            if (isMaterialValid && quantityValue != null) {
                                 onEditMaterial(
                                     editMaterialName.trim(),
                                     quantityValue,
@@ -899,8 +905,7 @@ private fun ActivityItem(
                                 showEditDialog = false
                             }
                         },
-                        enabled = editMaterialName.trim().isNotEmpty() &&
-                                  editQuantity.toDoubleOrNull()?.let { it > 0 } == true
+                        enabled = isMaterialValid
                     ) {
                         Text("Save")
                     }

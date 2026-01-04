@@ -89,7 +89,7 @@ class DailyReportViewModel(
         )
     
     /**
-     * Total hours for the current report.
+     * Total hours for the current report (machine activities only, per business rules).
      */
     val totalHours: StateFlow<Double> = _activitiesByClientSection
         .map { activitiesMap ->

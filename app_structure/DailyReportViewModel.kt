@@ -91,15 +91,11 @@ class DailyReportViewModel(
     /**
      * Total hours for the current report.
      */
-    val totalHours: StateFlow<Double> = _currentReportId
-        .flatMapLatest { reportId ->
-            flow {
-                if (reportId != null) {
-                    emit(repository.calculateTotalHours(reportId))
-                } else {
-                    emit(0.0)
-                }
-            }
+    val totalHours: StateFlow<Double> = _activitiesByClientSection
+        .map { activitiesMap ->
+            activitiesMap.values.flatten()
+                .filter { it.activityType == ActivityEntity.TYPE_MACHINE }
+                .sumOf { it.hours ?: 0.0 }
         }
         .stateIn(
             scope = viewModelScope,
@@ -196,6 +192,19 @@ class DailyReportViewModel(
     }
     
     /**
+     * Update a client section.
+     */
+    fun updateClientSection(
+        clientSectionId: Long,
+        clientName: String,
+        jobSite: String
+    ) {
+        viewModelScope.launch {
+            repository.updateClientSection(clientSectionId, clientName, jobSite)
+        }
+    }
+    
+    /**
      * Delete a client section.
      */
     fun deleteClientSection(clientSection: ClientSectionEntity) {
@@ -223,6 +232,22 @@ class DailyReportViewModel(
     }
     
     /**
+     * Update a machine activity.
+     */
+    fun updateMachineActivity(
+        activityId: Long,
+        clientSectionId: Long,
+        machine: String,
+        hours: Double,
+        description: String = ""
+    ) {
+        viewModelScope.launch {
+            repository.updateMachineActivity(activityId, machine, hours, description)
+            refreshActivitiesForClientSection(clientSectionId)
+        }
+    }
+    
+    /**
      * Add a material activity (progressive save).
      */
     fun addMaterialActivity(
@@ -235,6 +260,23 @@ class DailyReportViewModel(
         viewModelScope.launch {
             repository.addMaterialActivity(clientSectionId, materialName, quantity, unit, notes)
             // Refresh activities for this client section
+            refreshActivitiesForClientSection(clientSectionId)
+        }
+    }
+    
+    /**
+     * Update a material activity.
+     */
+    fun updateMaterialActivity(
+        activityId: Long,
+        clientSectionId: Long,
+        materialName: String,
+        quantity: Double,
+        unit: String,
+        notes: String = ""
+    ) {
+        viewModelScope.launch {
+            repository.updateMaterialActivity(activityId, materialName, quantity, unit, notes)
             refreshActivitiesForClientSection(clientSectionId)
         }
     }

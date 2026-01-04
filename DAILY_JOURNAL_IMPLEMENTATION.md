@@ -216,24 +216,33 @@ The implementation adds new tables alongside the legacy `work_reports` table:
    - [ ] Reopen app
    - [ ] Verify client is still there
 
-3. **Activities**
+3. **Trasferta Toggle**
+   - [ ] Enable trasferta from the dashboard switch
+   - [ ] Close and reopen app to verify it persists
+   - [ ] Finalize report and confirm trasferta shows correctly
+
+4. **Activities**
    - [ ] Add machine activity
    - [ ] Add material activity
    - [ ] Verify activities appear in client card
    - [ ] Verify total hours updates
 
-4. **Finalization**
+5. **Editing**
+   - [ ] Edit a client name or job site and confirm it updates
+   - [ ] Edit a machine and a material activity and confirm values change
+
+6. **Finalization**
    - [ ] Click "Save & Finalize"
    - [ ] Verify status changes to "FINAL"
    - [ ] Verify all edit buttons disappear
    - [ ] Verify "Edit Report" button appears
 
-5. **Reopen from Final**
+7. **Reopen from Final**
    - [ ] Click "Edit Report"
    - [ ] Verify status changes to "DRAFT"
    - [ ] Verify edit buttons reappear
 
-6. **History**
+8. **History**
    - [ ] Navigate to Dashboard
    - [ ] Verify finalized report appears
    - [ ] Verify status badge shows "FINAL"

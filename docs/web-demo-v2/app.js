@@ -78,7 +78,9 @@ function loadDataFromStorage() {
     try {
         const currentReportData = localStorage.getItem(CURRENT_REPORT_KEY);
         if (currentReportData) {
-            currentReport = JSON.parse(currentReportData);
+            const data = JSON.parse(currentReportData);
+            // Reconstruct the DailyReport object with methods
+            currentReport = Object.assign(new DailyReport(data.date), data);
         }
         
         const savedReportsData = localStorage.getItem(SAVED_REPORTS_KEY);
@@ -101,6 +103,15 @@ function saveCurrentReport() {
     }
 }
 
+// Autosave draft - called whenever data changes
+function autosaveDraft() {
+    if (currentReport && currentReport.isDraft()) {
+        saveCurrentReport();
+        // TODO: Replace with proper logging mechanism in production
+        // console.log('Draft autosaved at', new Date().toLocaleTimeString());
+    }
+}
+
 function saveFinalizedReports() {
     try {
         localStorage.setItem(SAVED_REPORTS_KEY, JSON.stringify(savedReports));
@@ -112,8 +123,9 @@ function saveFinalizedReports() {
 // Setup event listeners
 function setupEventListeners() {
     // Home screen
-    document.getElementById('start-report-btn').addEventListener('click', startDailyReport);
-    document.getElementById('history-btn').addEventListener('click', showHistory);
+    document.getElementById('continue-draft-btn').addEventListener('click', continueDraft);
+    document.getElementById('new-report-btn').addEventListener('click', startNewReport);
+    document.getElementById('view-all-history-btn').addEventListener('click', showHistory);
     
     // Daily report screen
     document.getElementById('back-to-home').addEventListener('click', () => showScreen('home-screen'));
@@ -157,7 +169,9 @@ function showScreen(screenId) {
     document.getElementById(screenId).classList.remove('hidden');
     
     // Update content when showing screens
-    if (screenId === 'daily-report-screen') {
+    if (screenId === 'home-screen') {
+        updateDashboard();
+    } else if (screenId === 'daily-report-screen') {
         updateDailyReportScreen();
     } else if (screenId === 'history-screen') {
         updateHistoryScreen();
@@ -180,10 +194,184 @@ function startDailyReport() {
     if (!currentReport || currentReport.date !== today) {
         currentReport = new DailyReport(today);
         clientColorIndex = 0;
-        saveCurrentReport();
+        autosaveDraft();
     }
     
     showScreen('daily-report-screen');
+}
+
+// Continue editing existing draft
+function continueDraft() {
+    if (currentReport) {
+        showScreen('daily-report-screen');
+    }
+}
+
+// Start a completely new report
+function startNewReport() {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // If there's a current draft for today, just continue it
+    if (currentReport && currentReport.date === today && currentReport.isDraft()) {
+        showScreen('daily-report-screen');
+        return;
+    }
+    
+    // If there's a finalized report for today or a draft from another day, ask what to do
+    if (currentReport && currentReport.isFinalized() && currentReport.date === today) {
+        showConfirmDialog(
+            'Rapporto già finalizzato',
+            'Esiste già un rapporto finalizzato per oggi. Vuoi modificarlo?',
+            () => {
+                reopenReportForEditing();
+            }
+        );
+        return;
+    }
+    
+    // Otherwise create a new report
+    currentReport = new DailyReport(today);
+    clientColorIndex = 0;
+    autosaveDraft();
+    showScreen('daily-report-screen');
+}
+
+// Update dashboard with summary information
+function updateDashboard() {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Update today's status
+    const todayStatusEl = document.getElementById('today-status');
+    const continueDraftBtn = document.getElementById('continue-draft-btn');
+    
+    if (currentReport && currentReport.date === today && currentReport.isDraft()) {
+        todayStatusEl.textContent = 'In corso';
+        continueDraftBtn.classList.remove('hidden');
+    } else if (currentReport && currentReport.date === today && currentReport.isFinalized()) {
+        todayStatusEl.textContent = 'Completato';
+        continueDraftBtn.classList.add('hidden');
+    } else {
+        todayStatusEl.textContent = 'Nessuna bozza';
+        continueDraftBtn.classList.add('hidden');
+    }
+    
+    // Update total reports count
+    document.getElementById('total-reports').textContent = savedReports.length;
+    
+    // Calculate week hours
+    const weekHours = calculateWeekHours();
+    document.getElementById('week-hours').textContent = weekHours.toFixed(1);
+    
+    // Update latest reports preview (show last 3)
+    updateLatestReportsPreview();
+}
+
+// Calculate total hours for current week (Monday to Sunday)
+function calculateWeekHours() {
+    const now = new Date();
+    const startOfWeek = getStartOfWeek(now);
+    
+    let totalHours = 0;
+    const countedIds = new Set();
+    
+    // Count finalized reports from this week
+    savedReports.forEach(report => {
+        const reportDate = new Date(report.date + 'T00:00:00');
+        if (reportDate >= startOfWeek && reportDate <= now) {
+            totalHours += report.totalHours || 0;
+            countedIds.add(report.id);
+        }
+    });
+    
+    // Add current draft if it's from this week and not already counted
+    if (currentReport && !countedIds.has(currentReport.id)) {
+        const reportDate = new Date(currentReport.date + 'T00:00:00');
+        if (reportDate >= startOfWeek && reportDate <= now) {
+            totalHours += currentReport.getTotalHours();
+        }
+    }
+    
+    return totalHours;
+}
+
+// Get Monday of current week
+function getStartOfWeek(date) {
+    const startOfWeek = new Date(date);
+    const day = date.getDay();
+    // If Sunday (0), go back 6 days to Monday; otherwise calculate difference from Monday
+    const diff = day === 0 ? -6 : 1 - day;
+    startOfWeek.setDate(date.getDate() + diff);
+    startOfWeek.setHours(0, 0, 0, 0);
+    return startOfWeek;
+}
+
+// Update latest reports preview on dashboard
+function updateLatestReportsPreview() {
+    const container = document.getElementById('latest-reports-list');
+    const emptyState = document.getElementById('empty-latest');
+    
+    if (savedReports.length === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+    }
+    
+    emptyState.classList.add('hidden');
+    container.innerHTML = '';
+    
+    // Show last 3 reports
+    const reportsToShow = savedReports.slice(0, 3);
+    
+    reportsToShow.forEach((report, index) => {
+        const previewCard = createReportPreviewCard(report, index);
+        container.appendChild(previewCard);
+    });
+}
+
+// Create report preview card for dashboard
+function createReportPreviewCard(report, index) {
+    const div = document.createElement('div');
+    div.className = 'report-preview-card';
+    
+    // Get first job site and main machines
+    const firstClient = report.clients[0];
+    const jobSite = firstClient ? firstClient.jobSite : 'N/A';
+    
+    // Get main machines (first 2) - stop early for performance
+    const machines = [];
+    outerLoop:
+    for (const client of report.clients) {
+        for (const activity of client.activities) {
+            if (activity.type === 'machine') {
+                machines.push(activity.machine);
+                if (machines.length >= 2) break outerLoop;
+            }
+        }
+    }
+    
+    const machinesText = machines.length > 0 ? machines.join(', ') : 'Nessuna macchina';
+    
+    div.innerHTML = `
+        <div class="report-preview-header">
+            <div class="report-preview-date">${formatDateShort(report.date)}</div>
+            <div class="report-preview-hours">${report.totalHours.toFixed(1)}h</div>
+        </div>
+        <div class="report-preview-info">📍 ${escapeHtml(jobSite)}</div>
+        <div class="report-preview-machines">🔧 ${escapeHtml(machinesText)}</div>
+    `;
+    
+    div.addEventListener('click', () => {
+        showReportDetail(index);
+    });
+    
+    return div;
+}
+
+// Format date in short format for preview
+function formatDateShort(dateStr) {
+    const date = new Date(dateStr + 'T00:00:00');
+    const options = { day: 'numeric', month: 'short' };
+    return date.toLocaleDateString('it-IT', options);
 }
 
 // Update daily report screen
@@ -379,7 +567,7 @@ function createClientSection() {
     document.getElementById('client-name').value = '';
     document.getElementById('job-site').value = '';
     
-    saveCurrentReport();
+    autosaveDraft();
     updateDailyReportScreen();
 }
 
@@ -408,7 +596,7 @@ function addMachineActivity(clientIndex) {
     });
     
     client.activities.push(activity);
-    saveCurrentReport();
+    autosaveDraft();
     updateDailyReportScreen();
 }
 
@@ -442,7 +630,7 @@ function addMaterialActivity(clientIndex) {
     });
     
     client.activities.push(activity);
-    saveCurrentReport();
+    autosaveDraft();
     updateDailyReportScreen();
 }
 
@@ -453,7 +641,7 @@ function deleteClient(index) {
         'Sei sicuro di voler eliminare questo cliente e tutte le sue attività?',
         () => {
             currentReport.clients.splice(index, 1);
-            saveCurrentReport();
+            autosaveDraft();
             updateDailyReportScreen();
         }
     );
@@ -466,7 +654,7 @@ function deleteActivity(clientIndex, activityIndex) {
         'Sei sicuro di voler eliminare questa attività?',
         () => {
             currentReport.clients[clientIndex].activities.splice(activityIndex, 1);
-            saveCurrentReport();
+            autosaveDraft();
             updateDailyReportScreen();
         }
     );

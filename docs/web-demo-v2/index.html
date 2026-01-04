@@ -8,23 +8,58 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Home Screen -->
+    <!-- Home Screen / Dashboard -->
     <div id="home-screen" class="screen">
         <header class="header">
-            <h1>Rapportino</h1>
+            <h1>Dashboard</h1>
         </header>
         
         <main class="main-content">
-            <div class="home-card" id="start-report-btn">
-                <div class="home-icon">📝</div>
-                <h2>Rapportino Giornaliero</h2>
-                <p>Inizia il diario di oggi</p>
+            <!-- Summary Cards -->
+            <div class="summary-section">
+                <div class="summary-card">
+                    <div class="summary-icon">📝</div>
+                    <div class="summary-info">
+                        <div class="summary-value" id="today-status">-</div>
+                        <div class="summary-label">Bozza di oggi</div>
+                    </div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="summary-icon">📊</div>
+                    <div class="summary-info">
+                        <div class="summary-value" id="total-reports">0</div>
+                        <div class="summary-label">Rapporti totali</div>
+                    </div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="summary-icon">⏱️</div>
+                    <div class="summary-info">
+                        <div class="summary-value" id="week-hours">0</div>
+                        <div class="summary-label">Ore questa settimana</div>
+                    </div>
+                </div>
             </div>
             
-            <div class="home-card" id="history-btn">
-                <div class="home-icon">📁</div>
-                <h2>Storico</h2>
-                <p>Visualizza rapporti salvati</p>
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn btn-success btn-large hidden" id="continue-draft-btn">
+                    📝 Continua Bozza
+                </button>
+                <button class="btn btn-primary btn-large" id="new-report-btn">
+                    ✨ Nuovo Rapporto
+                </button>
+            </div>
+            
+            <!-- Latest Reports Preview -->
+            <div class="latest-reports-section">
+                <h2>Ultimi Rapporti</h2>
+                <div id="latest-reports-list"></div>
+                <div id="empty-latest" class="empty-state hidden">
+                    <p>Nessun rapporto salvato</p>
+                </div>
+                <button class="btn btn-secondary" id="view-all-history-btn">Vedi tutti i rapporti</button>
             </div>
         </main>
     </div>
